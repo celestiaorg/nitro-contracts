@@ -43,7 +43,7 @@ import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
     uint256 public totalDelayedMessagesRead;
 
-    IBridge public bridge;
+    IBridge immutable public bridge;
 
     /// @inheritdoc ISequencerInboxOpt
     uint256 public constant HEADER_LENGTH = 40;
@@ -51,7 +51,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
     /// @inheritdoc ISequencerInboxOpt
     bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
 
-    IOwnable public rollup;
+    IOwnable immutable public rollup;
     mapping(address => bool) public isBatchPoster;
 
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
@@ -77,7 +77,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
         IBridge bridge_,
         ISequencerInboxOpt.MaxTimeVariation memory maxTimeVariation_
     ) {
-        if (bridge != IBridge(address(0))) revert AlreadyInit();
+        // if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();

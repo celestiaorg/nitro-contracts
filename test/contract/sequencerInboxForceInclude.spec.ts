@@ -430,7 +430,7 @@ describe('SequencerInboxForceInclude', async () => {
         )
     ).wait()
 
-    console.log('saved', res1.gasUsed.toNumber() - res2.gasUsed.toNumber() - 44455)
+    console.log('saved', res1.gasUsed.toNumber() - res2.gasUsed.toNumber() - 44455 - 8175)
   })
 
   it('can force-include one after another', async () => {
