@@ -233,11 +233,6 @@ describe('SequencerInboxForceInclude', async () => {
       'RollupMock'
     )) as RollupMock__factory
     const rollup = await rollupMockFac.deploy(await rollupOwner.getAddress())
-
-    const sequencerInboxFac = (await ethers.getContractFactory(
-      opt ? 'SequencerInboxOpt' : 'SequencerInbox'
-    )) as SequencerInbox__factory
-    const seqInboxTemplate = await sequencerInboxFac.deploy()
     const inboxFac = (await ethers.getContractFactory(
       'Inbox'
     )) as Inbox__factory
@@ -272,7 +267,12 @@ describe('SequencerInboxForceInclude', async () => {
       const sequencerInboxFac = (await ethers.getContractFactory(
         'SequencerInboxOpt'
       )) as SequencerInboxOpt__factory
-      sequencerInbox = await sequencerInboxFac.deploy()
+      sequencerInbox = await sequencerInboxFac.deploy(bridgeProxy.address, {
+        delayBlocks: maxDelayBlocks,
+        delaySeconds: maxDelayTime,
+        futureBlocks: 10,
+        futureSeconds: 3000,
+      })
     } else {
       const sequencerInboxFac = (await ethers.getContractFactory(
         'SequencerInbox'
@@ -315,7 +315,7 @@ describe('SequencerInboxForceInclude', async () => {
       user,
       bridge: bridge,
       inbox: inbox,
-      sequencerInbox: sequencerInbox,
+      sequencerInbox: sequencerInbox as SequencerInbox,
       messageTester,
       inboxProxy,
       inboxTemplate,
