@@ -28,6 +28,7 @@ import {
   MessageTester,
   RollupMock__factory,
   SequencerInbox,
+  SequencerInboxOpt__factory,
   SequencerInbox__factory,
   TransparentUpgradeableProxy__factory,
 } from '../../build/types'
@@ -254,34 +255,47 @@ describe('SequencerInboxForceInclude', async () => {
       adminAddr,
       '0x'
     )
-    const sequencerInboxProxy = await transparentUpgradeableProxyFac.deploy(
-      seqInboxTemplate.address,
-      adminAddr,
-      '0x'
-    )
+
     const inboxProxy = await transparentUpgradeableProxyFac.deploy(
       inboxTemplate.address,
       adminAddr,
       '0x'
     )
-
     const bridge = await bridgeFac.attach(bridgeProxy.address).connect(user)
     const bridgeAdmin = await bridgeFac
       .attach(bridgeProxy.address)
       .connect(rollupOwner)
-    const sequencerInbox = await sequencerInboxFac
-      .attach(sequencerInboxProxy.address)
-      .connect(user)
-    const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
-
     await bridge.initialize(rollup.address)
 
-    await sequencerInbox.initialize(bridgeProxy.address, {
-      delayBlocks: maxDelayBlocks,
-      delaySeconds: maxDelayTime,
-      futureBlocks: 10,
-      futureSeconds: 3000,
-    })
+    let sequencerInbox
+    if (opt) {
+      const sequencerInboxFac = (await ethers.getContractFactory(
+        'SequencerInboxOpt'
+      )) as SequencerInboxOpt__factory
+      sequencerInbox = await sequencerInboxFac.deploy()
+    } else {
+      const sequencerInboxFac = (await ethers.getContractFactory(
+        'SequencerInbox'
+      )) as SequencerInbox__factory
+      const seqInboxTemplate = await sequencerInboxFac.deploy()
+      const sequencerInboxProxy = await transparentUpgradeableProxyFac.deploy(
+        seqInboxTemplate.address,
+        adminAddr,
+        '0x'
+      )
+      sequencerInbox = await sequencerInboxFac
+        .attach(sequencerInboxProxy.address)
+        .connect(user)
+      await sequencerInbox.initialize(bridgeProxy.address, {
+        delayBlocks: maxDelayBlocks,
+        delaySeconds: maxDelayTime,
+        futureBlocks: 10,
+        futureSeconds: 3000,
+      })
+    }
+
+    const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
+
     await inbox.initialize(bridgeProxy.address, sequencerInbox.address)
 
     await bridgeAdmin.setDelayedInbox(inbox.address, true)
@@ -348,7 +362,7 @@ describe('SequencerInboxForceInclude', async () => {
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
       await setupSequencerInbox()
 
-    const setupOpt = await setupSequencerInbox()
+    const setupOpt = await setupSequencerInbox(10, 0, true)
 
     await sendDelayedTx(
       user,
@@ -416,7 +430,7 @@ describe('SequencerInboxForceInclude', async () => {
         )
     ).wait()
 
-    console.log("saved", res1.gasUsed.toNumber() - res2.gasUsed.toNumber());
+    console.log('saved', res1.gasUsed.toNumber() - res2.gasUsed.toNumber())
   })
 
   it('can force-include one after another', async () => {
