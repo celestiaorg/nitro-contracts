@@ -76,20 +76,17 @@ interface ISequencerInboxOpt is IDelayedMessageProvider {
         uint64 creationBlock;
     }
 
-    function maxTimeVariation()
+    function getMaxTimeVariation()
         external
         view
         returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
+            ISequencerInboxOpt.MaxTimeVariation memory
         );
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 
     /// @notice Remove force inclusion delay after a L1 chainId fork
-    function removeDelayAfterFork() external;
+    // function removeDelayAfterFork() external;
 
     /// @notice Force messages from the delayed inbox to be included in the chain
     ///         Callable by any address, but message can only be force-included after maxTimeVariation.delayBlocks and
@@ -143,7 +140,7 @@ interface ISequencerInboxOpt is IDelayedMessageProvider {
      * @notice Set max delay for sequencer inbox
      * @param maxTimeVariation_ the maximum time variation parameters
      */
-    function setMaxTimeVariation(MaxTimeVariation memory maxTimeVariation_) external;
+    // function setMaxTimeVariation(MaxTimeVariation memory maxTimeVariation_) external;
 
     /**
      * @notice Updates whether an address is authorized to be a batch poster at the sequencer inbox
