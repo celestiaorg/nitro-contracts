@@ -14,18 +14,33 @@ contract BridgeCreatorTest is Test {
     address public owner = address(100);
 
     function setUp() public {
+        BridgeCreator.BridgeContracts memory ethBasedTemplates = BridgeCreator.BridgeContracts({
+            bridge: IBridge(new Bridge()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox()),
+            inbox: IInboxBase(new Inbox()),
+            rollupEventInbox: IRollupEventInbox(new RollupEventInbox()),
+            outbox: IOutbox(new Outbox())
+        });
+
+        BridgeCreator.BridgeContracts memory erc20BasedTemplates = BridgeCreator.BridgeContracts({
+            bridge: IBridge(new ERC20Bridge()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox()),
+            inbox: IInboxBase(new ERC20Inbox()),
+            rollupEventInbox: IRollupEventInbox(new ERC20RollupEventInbox()),
+            outbox: IOutbox(new ERC20Outbox())
+        });
         vm.prank(owner);
-        creator = new BridgeCreator();
+        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
     }
 
     /* solhint-disable func-name-mixedcase */
     function test_constructor() public {
         (
-            Bridge bridgeTemplate,
-            SequencerInbox sequencerInboxTemplate,
-            Inbox inboxTemplate,
-            RollupEventInbox rollupEventInboxTemplate,
-            Outbox outboxTemplate
+            IBridge bridgeTemplate,
+            ISequencerInbox sequencerInboxTemplate,
+            IInboxBase inboxTemplate,
+            IRollupEventInbox rollupEventInboxTemplate,
+            IOutbox outboxTemplate
         ) = creator.ethBasedTemplates();
         assertTrue(address(bridgeTemplate) != address(0), "Bridge not created");
         assertTrue(address(sequencerInboxTemplate) != address(0), "SeqInbox not created");
@@ -34,11 +49,11 @@ contract BridgeCreatorTest is Test {
         assertTrue(address(outboxTemplate) != address(0), "Outbox not created");
 
         (
-            ERC20Bridge erc20BridgeTemplate,
-            SequencerInbox erc20SequencerInboxTemplate,
-            ERC20Inbox erc20InboxTemplate,
-            ERC20RollupEventInbox erc20RollupEventInboxTemplate,
-            ERC20Outbox erc20OutboxTemplate
+            IBridge erc20BridgeTemplate,
+            ISequencerInbox erc20SequencerInboxTemplate,
+            IInboxBase erc20InboxTemplate,
+            IRollupEventInbox erc20RollupEventInboxTemplate,
+            IOutbox erc20OutboxTemplate
         ) = creator.erc20BasedTemplates();
         assertTrue(address(erc20BridgeTemplate) != address(0), "Bridge not created");
         assertTrue(address(erc20SequencerInboxTemplate) != address(0), "SeqInbox not created");
@@ -48,7 +63,7 @@ contract BridgeCreatorTest is Test {
     }
 
     function test_updateTemplates() public {
-        BridgeCreator.ContractTemplates memory templs = BridgeCreator.ContractTemplates({
+        BridgeCreator.BridgeContracts memory templs = BridgeCreator.BridgeContracts({
             bridge: Bridge(address(200)),
             sequencerInbox: SequencerInbox(address(201)),
             inbox: Inbox(address(202)),
@@ -60,11 +75,11 @@ contract BridgeCreatorTest is Test {
         creator.updateTemplates(templs);
 
         (
-            Bridge bridgeTemplate,
-            SequencerInbox sequencerInboxTemplate,
-            Inbox inboxTemplate,
-            RollupEventInbox rollupEventInboxTemplate,
-            Outbox outboxTemplate
+            IBridge bridgeTemplate,
+            ISequencerInbox sequencerInboxTemplate,
+            IInboxBase inboxTemplate,
+            IRollupEventInbox rollupEventInboxTemplate,
+            IOutbox outboxTemplate
         ) = creator.ethBasedTemplates();
         assertEq(address(bridgeTemplate), address(templs.bridge), "Invalid bridge");
         assertEq(
@@ -80,7 +95,7 @@ contract BridgeCreatorTest is Test {
     }
 
     function test_updateERC20Templates() public {
-        BridgeCreator.ContractERC20Templates memory templs = BridgeCreator.ContractERC20Templates({
+        BridgeCreator.BridgeContracts memory templs = BridgeCreator.BridgeContracts({
             bridge: ERC20Bridge(address(400)),
             sequencerInbox: SequencerInbox(address(401)),
             inbox: ERC20Inbox(address(402)),
@@ -92,11 +107,11 @@ contract BridgeCreatorTest is Test {
         creator.updateERC20Templates(templs);
 
         (
-            ERC20Bridge bridgeTemplate,
-            SequencerInbox sequencerInboxTemplate,
-            ERC20Inbox inboxTemplate,
-            ERC20RollupEventInbox rollupEventInboxTemplate,
-            ERC20Outbox outboxTemplate
+            IBridge bridgeTemplate,
+            ISequencerInbox sequencerInboxTemplate,
+            IInboxBase inboxTemplate,
+            IRollupEventInbox rollupEventInboxTemplate,
+            IOutbox outboxTemplate
         ) = creator.erc20BasedTemplates();
         assertEq(address(bridgeTemplate), address(templs.bridge), "Invalid bridge");
         assertEq(
@@ -121,10 +136,10 @@ contract BridgeCreatorTest is Test {
 
         (
             IBridge bridge,
-            SequencerInbox seqInbox,
+            ISequencerInbox seqInbox,
             IInboxBase inbox,
             IRollupEventInbox eventInbox,
-            Outbox outbox
+            IOutbox outbox
         ) = creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars);
 
         // bridge
@@ -171,10 +186,10 @@ contract BridgeCreatorTest is Test {
 
         (
             IBridge bridge,
-            SequencerInbox seqInbox,
+            ISequencerInbox seqInbox,
             IInboxBase inbox,
             IRollupEventInbox eventInbox,
-            Outbox outbox
+            IOutbox outbox
         ) = creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars);
 
         // bridge

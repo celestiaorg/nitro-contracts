@@ -39,8 +39,24 @@ contract RollupCreatorTest is Test {
         rollupCreator = new RollupCreator();
         deployHelper = new DeployHelper();
 
+        BridgeCreator.BridgeContracts memory ethBasedTemplates = BridgeCreator.BridgeContracts({
+            bridge: IBridge(new Bridge()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox()),
+            inbox: IInboxBase(new Inbox()),
+            rollupEventInbox: IRollupEventInbox(new RollupEventInbox()),
+            outbox: IOutbox(new Outbox())
+        });
+
+        BridgeCreator.BridgeContracts memory erc20BasedTemplates = BridgeCreator.BridgeContracts({
+            bridge: IBridge(new ERC20Bridge()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox()),
+            inbox: IInboxBase(new ERC20Inbox()),
+            rollupEventInbox: IRollupEventInbox(new ERC20RollupEventInbox()),
+            outbox: IOutbox(new ERC20Outbox())
+        });
+
         // deploy BridgeCreators
-        BridgeCreator bridgeCreator = new BridgeCreator();
+        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
 
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 
