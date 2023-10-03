@@ -348,7 +348,7 @@ describe('SequencerInboxForceInclude', async () => {
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
       await setupSequencerInbox()
 
-    const setupOpt = await setupSequencerInbox()
+    const setupOpt = await setupSequencerInbox(10, 0, true)
 
     await sendDelayedTx(
       user,
