@@ -24,7 +24,7 @@ import {
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInbox.sol";
-import "./ISequencerInboxOpt.sol";
+import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 
@@ -40,15 +40,15 @@ import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
  * in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
  * sequencer within a time limit they can be force included into the rollup inbox by anyone.
  */
-contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
+contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     uint256 public totalDelayedMessagesRead;
 
     IBridge immutable public bridge;
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     uint256 public constant HEADER_LENGTH = 40;
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
 
     IOwnable immutable public rollup;
@@ -75,7 +75,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
 
     constructor(
         IBridge bridge_,
-        ISequencerInboxOpt.MaxTimeVariation memory maxTimeVariation_
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
     ) {
         // if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
@@ -101,10 +101,10 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
         return bounds;
     }
 
-    // /// @inheritdoc ISequencerInboxOpt
+    // /// @inheritdoc ISequencerInbox
     // function removeDelayAfterFork() external {
     //     if (!_chainIdChanged()) revert NotForked();
-    //     maxTimeVariation = ISequencerInboxOpt.MaxTimeVariation({
+    //     maxTimeVariation = ISequencerInbox.MaxTimeVariation({
     //         delayBlocks: 1,
     //         futureBlocks: 1,
     //         delaySeconds: 1,
@@ -112,16 +112,16 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
     //     });
     // }
 
-    function getMaxTimeVariation() view public returns(ISequencerInboxOpt.MaxTimeVariation memory) {
+    function getMaxTimeVariation() view public returns(ISequencerInbox.MaxTimeVariation memory) {
         if (_chainIdChanged()) {
-           return ISequencerInboxOpt.MaxTimeVariation({
+           return ISequencerInbox.MaxTimeVariation({
                 delayBlocks: 1,
                 futureBlocks: 1,
                 delaySeconds: 1,
                 futureSeconds: 1
             }); 
         } else {
-            return ISequencerInboxOpt.MaxTimeVariation({
+            return ISequencerInbox.MaxTimeVariation({
                 delayBlocks: delayBlocks,
                 futureBlocks: futureBlocks,
                 delaySeconds: delaySeconds,
@@ -131,7 +131,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
 
     }
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     function forceInclusion(
         uint256 _totalDelayedMessagesRead,
         uint8 kind,
@@ -437,8 +437,8 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
         return bridge.sequencerMessageCount();
     }
 
-    // /// @inheritdoc ISequencerInboxOpt
-    // function setMaxTimeVariation(ISequencerInboxOpt.MaxTimeVariation memory maxTimeVariation_)
+    // /// @inheritdoc ISequencerInbox
+    // function setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
     //     external
     //     onlyRollupOwner
     // {
@@ -446,13 +446,13 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
     //     emit OwnerFunctionCalled(0);
     // }
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     function setIsBatchPoster(address addr, bool isBatchPoster_) external onlyRollupOwner {
         isBatchPoster[addr] = isBatchPoster_;
         emit OwnerFunctionCalled(1);
     }
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     function setValidKeyset(bytes calldata keysetBytes) external onlyRollupOwner {
         uint256 ksWord = uint256(keccak256(bytes.concat(hex"fe", keccak256(keysetBytes))));
         bytes32 ksHash = bytes32(ksWord ^ (1 << 255));
@@ -467,7 +467,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
         emit OwnerFunctionCalled(2);
     }
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     function invalidateKeysetHash(bytes32 ksHash) external onlyRollupOwner {
         if (!dasKeySetInfo[ksHash].isValidKeyset) revert NoSuchKeyset(ksHash);
         // we don't delete the block creation value since its used to fetch the SetValidKeyset
@@ -478,7 +478,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
         emit OwnerFunctionCalled(3);
     }
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     function setIsSequencer(address addr, bool isSequencer_) external onlyRollupOwner {
         isSequencer[addr] = isSequencer_;
         emit OwnerFunctionCalled(4);
@@ -488,7 +488,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
         return dasKeySetInfo[ksHash].isValidKeyset;
     }
 
-    /// @inheritdoc ISequencerInboxOpt
+    /// @inheritdoc ISequencerInbox
     function getKeysetCreationBlock(bytes32 ksHash) external view returns (uint256) {
         DasKeySetInfo memory ksInfo = dasKeySetInfo[ksHash];
         if (ksInfo.creationBlock == 0) revert NoSuchKeyset(ksHash);

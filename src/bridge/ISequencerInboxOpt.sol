@@ -10,7 +10,7 @@ import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
 
-interface ISequencerInboxOpt is IDelayedMessageProvider {
+interface ISequencerInbox is IDelayedMessageProvider {
     struct MaxTimeVariation {
         uint256 delayBlocks;
         uint256 futureBlocks;
@@ -80,7 +80,7 @@ interface ISequencerInboxOpt is IDelayedMessageProvider {
         external
         view
         returns (
-            ISequencerInboxOpt.MaxTimeVariation memory
+            ISequencerInbox.MaxTimeVariation memory
         );
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
