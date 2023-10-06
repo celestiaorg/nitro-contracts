@@ -13,19 +13,21 @@ contract BridgeCreatorTest is Test {
     BridgeCreator public creator;
     address public owner = address(100);
 
+    uint256 public constant MAX_DATA_SIZE = 117_964;
+
     function setUp() public {
         BridgeCreator.BridgeContracts memory ethBasedTemplates = BridgeCreator.BridgeContracts({
             bridge: IBridge(new Bridge()),
-            sequencerInbox: ISequencerInbox(new SequencerInbox()),
-            inbox: IInboxBase(new Inbox()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox(MAX_DATA_SIZE)),
+            inbox: IInboxBase(new Inbox(MAX_DATA_SIZE)),
             rollupEventInbox: IRollupEventInbox(new RollupEventInbox()),
             outbox: IOutbox(new Outbox())
         });
 
         BridgeCreator.BridgeContracts memory erc20BasedTemplates = BridgeCreator.BridgeContracts({
             bridge: IBridge(new ERC20Bridge()),
-            sequencerInbox: ISequencerInbox(new SequencerInbox()),
-            inbox: IInboxBase(new ERC20Inbox()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox(MAX_DATA_SIZE)),
+            inbox: IInboxBase(new ERC20Inbox(MAX_DATA_SIZE)),
             rollupEventInbox: IRollupEventInbox(new ERC20RollupEventInbox()),
             outbox: IOutbox(new ERC20Outbox())
         });
@@ -64,11 +66,11 @@ contract BridgeCreatorTest is Test {
 
     function test_updateTemplates() public {
         BridgeCreator.BridgeContracts memory templs = BridgeCreator.BridgeContracts({
-            bridge: Bridge(address(200)),
-            sequencerInbox: SequencerInbox(address(201)),
-            inbox: Inbox(address(202)),
-            rollupEventInbox: RollupEventInbox(address(203)),
-            outbox: Outbox(address(204))
+            bridge: IBridge(address(200)),
+            sequencerInbox: ISequencerInbox(address(201)),
+            inbox: IInboxBase(address(202)),
+            rollupEventInbox: IRollupEventInbox(address(203)),
+            outbox: IOutbox(address(204))
         });
 
         vm.prank(owner);

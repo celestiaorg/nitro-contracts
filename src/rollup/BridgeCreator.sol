@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 
 import "../bridge/Bridge.sol";
 import "../bridge/SequencerInbox.sol";
-import "../bridge/ISequencerInbox.sol";
 import "../bridge/Inbox.sol";
 import "../bridge/Outbox.sol";
 import "./RollupEventInbox.sol";

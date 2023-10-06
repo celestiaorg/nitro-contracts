@@ -7,6 +7,7 @@ import {
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import { sleep } from './testSetup'
+import { maxDataSize } from './config'
 
 // Define a verification function
 async function verifyContract(
@@ -80,14 +81,14 @@ async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
   const ethBridge = await deployContract('Bridge', signer, [], false)
-  const ethSequencerInbox = await deployContract('SequencerInbox', signer, [], false)
-  const ethInbox = await deployContract('Inbox', signer, [], false)
+  const ethSequencerInbox = await deployContract('SequencerInbox', signer, [maxDataSize], false)
+  const ethInbox = await deployContract('Inbox', signer, [maxDataSize], false)
   const ethRollupEventInbox = await deployContract('RollupEventInbox', signer, [], false)
   const ethOutbox = await deployContract('Outbox', signer, [], false)
 
   const erc20Bridge = await deployContract('ERC20Bridge', signer, [], false)
   const erc20SequencerInbox = ethSequencerInbox
-  const erc20Inbox = await deployContract('ERC20Inbox', signer, [], false)
+  const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize], false)
   const erc20RollupEventInbox = await deployContract('ERC20RollupEventInbox', signer, [], false)
   const erc20Outbox = await deployContract('ERC20Outbox', signer, [], false)
 
@@ -175,11 +176,16 @@ async function main() {
     await verifyContract(
       'SequencerInbox',
       sequencerInbox,
-      [],
+      [maxDataSize],
       'src/bridge/SequencerInbox.sol:SequencerInbox'
     )
     console.log(`"inbox implementation contract" created at address:`, inbox)
-    await verifyContract('Inbox', inbox, [], 'src/bridge/Inbox.sol:Inbox')
+    await verifyContract(
+      'Inbox',
+      inbox,
+      [maxDataSize],
+      'src/bridge/Inbox.sol:Inbox'
+    )
 
     console.log(
       `"rollupEventInbox implementation contract" created at address:`,

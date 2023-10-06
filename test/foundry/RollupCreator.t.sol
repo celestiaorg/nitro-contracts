@@ -29,7 +29,8 @@ contract RollupCreatorTest is Test {
     DeployHelper public deployHelper;
 
     // 1 gwei
-    uint256 MAX_FEE_PER_GAS = 1_000_000_000;
+    uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
+    uint256 public constant MAX_DATA_SIZE = 117_964;
 
     /* solhint-disable func-name-mixedcase */
 
@@ -41,16 +42,16 @@ contract RollupCreatorTest is Test {
 
         BridgeCreator.BridgeContracts memory ethBasedTemplates = BridgeCreator.BridgeContracts({
             bridge: IBridge(new Bridge()),
-            sequencerInbox: ISequencerInbox(new SequencerInbox()),
-            inbox: IInboxBase(new Inbox()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox(MAX_DATA_SIZE)),
+            inbox: IInboxBase(new Inbox(MAX_DATA_SIZE)),
             rollupEventInbox: IRollupEventInbox(new RollupEventInbox()),
             outbox: IOutbox(new Outbox())
         });
 
         BridgeCreator.BridgeContracts memory erc20BasedTemplates = BridgeCreator.BridgeContracts({
             bridge: IBridge(new ERC20Bridge()),
-            sequencerInbox: ISequencerInbox(new SequencerInbox()),
-            inbox: IInboxBase(new ERC20Inbox()),
+            sequencerInbox: ISequencerInbox(new SequencerInbox(MAX_DATA_SIZE)),
+            inbox: IInboxBase(new ERC20Inbox(MAX_DATA_SIZE)),
             rollupEventInbox: IRollupEventInbox(new ERC20RollupEventInbox()),
             outbox: IOutbox(new ERC20Outbox())
         });
@@ -118,7 +119,7 @@ contract RollupCreatorTest is Test {
         validators[1] = makeAddr("validator2");
 
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, address(0), true, MAX_FEE_PER_GAS
+            config, batchPoster, validators, MAX_DATA_SIZE, address(0), true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();
@@ -244,7 +245,7 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
         address rollupAddress = rollupCreator.createRollup(
-            config, batchPoster, validators, nativeToken, true, MAX_FEE_PER_GAS
+            config, batchPoster, validators, MAX_DATA_SIZE, nativeToken, true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();
@@ -367,7 +368,7 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, address(0), true, MAX_FEE_PER_GAS
+            config, batchPoster, validators, MAX_DATA_SIZE, address(0), true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();

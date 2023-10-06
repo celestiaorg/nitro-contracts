@@ -23,17 +23,25 @@ import { ContractTransaction } from '@ethersproject/contracts'
 import { assert, expect } from 'chai'
 import {
   BridgeCreator__factory,
+  Bridge__factory,
   ChallengeManager,
   ChallengeManager__factory,
   DeployHelper__factory,
+  ERC20Bridge__factory,
+  ERC20Inbox__factory,
+  ERC20Outbox__factory,
+  ERC20RollupEventInbox__factory,
+  Inbox__factory,
   OneStepProofEntry__factory,
   OneStepProver0__factory,
   OneStepProverHostIo__factory,
   OneStepProverMath__factory,
   OneStepProverMemory__factory,
+  Outbox__factory,
   RollupAdminLogic,
   RollupAdminLogic__factory,
   RollupCreator__factory,
+  RollupEventInbox__factory,
   RollupUserLogic,
   RollupUserLogic__factory,
   SequencerInbox,
@@ -63,6 +71,7 @@ import { constants, providers } from 'ethers'
 import { blockStateHash, MachineStatus } from './common/challengeLib'
 import * as globalStateLib from './common/globalStateLib'
 import { RollupChallengeStartedEvent } from '../../build/types/src/rollup/IRollupCore'
+import { maxDataSize } from '../../scripts/config'
 
 const zerobytes32 = ethers.constants.HashZero
 const stakeRequirement = 10
@@ -169,11 +178,72 @@ const setup = async () => {
   )
   const upgradeExecutorLogic = await upgradeExecutorLogicFac.deploy()
 
+  const ethBridgeFac = (await ethers.getContractFactory(
+    'Bridge'
+  )) as Bridge__factory
+  const ethBridge = await ethBridgeFac.deploy()
+
+  const ethSequencerInboxFac = (await ethers.getContractFactory(
+    'SequencerInbox'
+  )) as SequencerInbox__factory
+  const ethSequencerInbox = await ethSequencerInboxFac.deploy(maxDataSize)
+
+  const ethInboxFac = (await ethers.getContractFactory(
+    'Inbox'
+  )) as Inbox__factory
+  const ethInbox = await ethInboxFac.deploy(maxDataSize)
+
+  const ethRollupEventInboxFac = (await ethers.getContractFactory(
+    'RollupEventInbox'
+  )) as RollupEventInbox__factory
+  const ethRollupEventInbox = await ethRollupEventInboxFac.deploy()
+
+  const ethOutboxFac = (await ethers.getContractFactory(
+    'Outbox'
+  )) as Outbox__factory
+  const ethOutbox = await ethOutboxFac.deploy()
+
+  const erc20BridgeFac = (await ethers.getContractFactory(
+    'ERC20Bridge'
+  )) as ERC20Bridge__factory
+  const erc20Bridge = await erc20BridgeFac.deploy()
+
+  const erc20SequencerInbox = ethSequencerInbox
+
+  const erc20InboxFac = (await ethers.getContractFactory(
+    'ERC20Inbox'
+  )) as ERC20Inbox__factory
+  const erc20Inbox = await erc20InboxFac.deploy(maxDataSize)
+
+  const erc20RollupEventInboxFac = (await ethers.getContractFactory(
+    'ERC20RollupEventInbox'
+  )) as ERC20RollupEventInbox__factory
+  const erc20RollupEventInbox = await erc20RollupEventInboxFac.deploy()
+
+  const erc20OutboxFac = (await ethers.getContractFactory(
+    'ERC20Outbox'
+  )) as ERC20Outbox__factory
+  const erc20Outbox = await erc20OutboxFac.deploy()
+
   const bridgeCreatorFac = (await ethers.getContractFactory(
     'BridgeCreator'
   )) as BridgeCreator__factory
-  const bridgeCreator = await bridgeCreatorFac.deploy()
-
+  const bridgeCreator = await bridgeCreatorFac.deploy(
+    {
+      bridge: ethBridge.address,
+      sequencerInbox: ethSequencerInbox.address,
+      inbox: ethInbox.address,
+      rollupEventInbox: ethRollupEventInbox.address,
+      outbox: ethOutbox.address,
+    },
+    {
+      bridge: erc20Bridge.address,
+      sequencerInbox: erc20SequencerInbox.address,
+      inbox: erc20Inbox.address,
+      rollupEventInbox: erc20RollupEventInbox.address,
+      outbox: erc20Outbox.address,
+    }
+  )
   const rollupCreatorFac = (await ethers.getContractFactory(
     'RollupCreator'
   )) as RollupCreator__factory
@@ -201,6 +271,7 @@ const setup = async () => {
     await getDefaultConfig(),
     await sequencer.getAddress(),
     [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
+    117964,
     ethers.constants.AddressZero,
     true,
     maxFeePerGas,
