@@ -10,6 +10,7 @@ import "../bridge/ISequencerInbox.sol";
 import "../bridge/Inbox.sol";
 import "../bridge/Outbox.sol";
 import "./RollupEventInbox.sol";
+import "../data-availability/IDAOracle.sol";
 
 import "../bridge/IBridge.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -21,6 +22,7 @@ contract BridgeCreator is Ownable {
     Inbox public inboxTemplate;
     RollupEventInbox public rollupEventInboxTemplate;
     Outbox public outboxTemplate;
+    IDAOracle public blobstream;
 
     event TemplatesUpdated();
 
@@ -37,14 +39,15 @@ contract BridgeCreator is Ownable {
         address _sequencerInboxTemplate,
         address _inboxTemplate,
         address _rollupEventInboxTemplate,
-        address _outboxTemplate
+        address _outboxTemplate,
+        address _blobstream
     ) external onlyOwner {
         bridgeTemplate = Bridge(_bridgeTemplate);
         sequencerInboxTemplate = SequencerInbox(_sequencerInboxTemplate);
         inboxTemplate = Inbox(_inboxTemplate);
         rollupEventInboxTemplate = RollupEventInbox(_rollupEventInboxTemplate);
         outboxTemplate = Outbox(_outboxTemplate);
-
+        blobstream = IDAOracle(_blobstream);
         emit TemplatesUpdated();
     }
 
@@ -61,16 +64,7 @@ contract BridgeCreator is Ownable {
         address adminProxy,
         address rollup,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation
-    )
-        external
-        returns (
-            Bridge,
-            SequencerInbox,
-            Inbox,
-            RollupEventInbox,
-            Outbox
-        )
-    {
+    ) external returns (Bridge, SequencerInbox, Inbox, RollupEventInbox, Outbox) {
         CreateBridgeFrame memory frame;
         {
             frame.bridge = Bridge(
@@ -99,7 +93,7 @@ contract BridgeCreator is Ownable {
         }
 
         frame.bridge.initialize(IOwnable(rollup));
-        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
+        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation, this.blobstream());
         frame.inbox.initialize(IBridge(frame.bridge), ISequencerInbox(frame.sequencerInbox));
         frame.rollupEventInbox.initialize(IBridge(frame.bridge));
         frame.outbox.initialize(IBridge(frame.bridge));
