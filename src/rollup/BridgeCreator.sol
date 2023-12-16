@@ -13,6 +13,7 @@ import "../bridge/ERC20Bridge.sol";
 import "../bridge/ERC20Inbox.sol";
 import "../rollup/ERC20RollupEventInbox.sol";
 import "../bridge/ERC20Outbox.sol";
+import "../data-availability/IDAOracle.sol";
 
 import "../bridge/IBridge.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";

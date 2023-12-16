@@ -6,6 +6,7 @@
 pragma solidity >=0.6.9 <0.9.0;
 pragma experimental ABIEncoderV2;
 
+import "../data-availability/IDAOracle.sol";
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
@@ -43,6 +44,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function bridge() external view returns (IBridge);
 
+    /// @dev address of the Blobstream contract to use for Celestia messages
+    // solhint-disable-next-line func-name-mixedcase
+    function BLOBSTREAM() external view returns (address);
+
     /// @dev The size of the batch header
     // solhint-disable-next-line func-name-mixedcase
     function HEADER_LENGTH() external view returns (uint256);
@@ -64,6 +69,12 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
     // solhint-disable-next-line func-name-mixedcase
     function DAS_MESSAGE_HEADER_FLAG() external view returns (bytes1);
+
+    /// @dev If the first data byte after the header has this bit set,
+    ///      then the batch data is a celestia message
+    ///      See: https://github.com/celestiaorg/nitro/blob/blobstream-v2.2.2/arbstate/das_reader.go
+    // solhint-disable-next-line func-name-mixedcase
+    function CELESTIA_MESSAGE_HEADER_FLAG() external view returns (bytes1);
 
     /// @dev If the first data byte after the header has this bit set,
     ///      then the batch data is a das message that employs a merklesization strategy
