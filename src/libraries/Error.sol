@@ -178,3 +178,6 @@ error NoSuchKeyset(bytes32);
 
 /// @dev Thrown when rollup is not updated with updateRollupAddress
 error RollupNotChanged();
+
+/// @dev Could not verify data root in blobstream
+error NoSuchDataRoot(bytes32);

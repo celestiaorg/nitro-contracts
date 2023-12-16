@@ -21,7 +21,8 @@ import {
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
-    RollupNotChanged
+    RollupNotChanged,
+    NoSuchDataRoot
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -30,6 +31,8 @@ import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
+
+import {IDAOracle, DataRootTuple, BinaryMerkleProof} from "../data-availability/IDAOracle.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
@@ -47,6 +50,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 public totalDelayedMessagesRead;
 
     IBridge public bridge;
+
+    address public constant BLOBSTREAM = 0x0000000000000000000000000000000000000000;
 
     /// @inheritdoc ISequencerInbox
     uint256 public constant HEADER_LENGTH = 40;
@@ -335,14 +340,63 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             bytes32 dasKeysetHash = bytes32(data[1:33]);
             if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
         }
+        // celestia batches expect to have the type byte set, followed by the block height, the start index of the blob in the EDS,
+        // the length that the blob occupies in shares in the EDS, the key of the merkle proof, the number of leaves of the merkle proof,
+        // the tupleRootNonce, a transaction commitment, the data root to be validated, and the side nodes
+        if (data.length >= 193 && data[0] & 0x0c != 0) {
+            uint256 offset = 1;
+            uint256 sideNodesLength;
+            uint256 height;
+            uint256 key;
+            uint256 numLeaves;
+            uint256 tupleRootNonce;
+            bytes32 dataRoot;
+
+            // Directly read from calldata using assembly
+            assembly {
+                height := calldataload(add(data.offset, offset))
+                offset := add(offset, 32)
+
+                offset := add(offset, 64) // 'Start' and 'SharesLength' are skipped
+
+                key := calldataload(add(data.offset, offset))
+                offset := add(offset, 32)
+
+                numLeaves := calldataload(add(data.offset, offset))
+                offset := add(offset, 32)
+
+                tupleRootNonce := calldataload(add(data.offset, offset))
+                offset := add(offset, 32)
+
+                dataRoot := calldataload(add(data.offset, offset))
+                offset := add(offset, 32)
+
+                sideNodesLength := calldataload(add(data.offset, offset))
+                offset := add(offset, 32)
+            }
+
+            // Allocate and populate sideNodes
+            bytes32[] memory sideNodes = new bytes32[](sideNodesLength);
+            for (uint256 i = 0; i < sideNodesLength; ++i) {
+                assembly {
+                    mstore(
+                        add(sideNodes, add(0x20, mul(i, 0x20))),
+                        calldataload(add(add(data.offset, offset), mul(i, 0x20)))
+                    )
+                }
+            }
+
+            DataRootTuple memory tuple = DataRootTuple(height, dataRoot);
+            BinaryMerkleProof memory proof = BinaryMerkleProof(sideNodes, key, numLeaves);
+            if (!IDAOracle(BLOBSTREAM).verifyAttestation(tupleRootNonce, tuple, proof))
+                revert NoSuchDataRoot(dataRoot);
+        }
         _;
     }
 
-    function packHeader(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes memory, TimeBounds memory)
-    {
+    function packHeader(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes memory, TimeBounds memory) {
         TimeBounds memory timeBounds = getTimeBounds();
         bytes memory header = abi.encodePacked(
             timeBounds.minTimestamp,
@@ -356,22 +410,18 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return (header, timeBounds);
     }
 
-    function formDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
-        internal
-        view
-        validateBatchData(data)
-        returns (bytes32, TimeBounds memory)
-    {
+    function formDataHash(
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead
+    ) internal view validateBatchData(data) returns (bytes32, TimeBounds memory) {
         (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
         bytes32 dataHash = keccak256(bytes.concat(header, data));
         return (dataHash, timeBounds);
     }
 
-    function formEmptyDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes32, TimeBounds memory)
-    {
+    function formEmptyDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, TimeBounds memory) {
         (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
         return (keccak256(header), timeBounds);
     }
@@ -384,12 +434,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount
     )
         internal
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        )
+        returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc)
     {
         if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
         if (afterDelayedMessagesRead > bridge.delayedMessageCount()) revert DelayedTooFar();
@@ -448,10 +493,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
-        external
-        onlyRollupOwner
-    {
+    function setMaxTimeVariation(
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
+    ) external onlyRollupOwner {
         maxTimeVariation = maxTimeVariation_;
         emit OwnerFunctionCalled(0);
     }

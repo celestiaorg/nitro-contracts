@@ -6,6 +6,7 @@
 pragma solidity >=0.6.9 <0.9.0;
 pragma experimental ABIEncoderV2;
 
+import "../data-availability/IDAOracle.sol";
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
@@ -78,15 +79,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint64 creationBlock;
     }
 
-    function maxTimeVariation()
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        );
+    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256);
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 
