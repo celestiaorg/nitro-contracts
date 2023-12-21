@@ -331,7 +331,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // celestia batches expect to have the type byte set, followed by the block height, the start index of the blob in the EDS,
         // the length that the blob occupies in shares in the EDS, the key of the merkle proof, the number of leaves of the merkle proof,
         // the tupleRootNonce, a transaction commitment, the data root to be validated, and the side nodes
-        if (data.length >= 193 && data[0] & 0x0c != 0) {
+        if (data.length >= 160 && data[0] & 0x0c != 0) {
             uint256 offset = 1;
             uint256 sideNodesLength;
             uint256 height;
