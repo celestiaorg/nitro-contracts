@@ -331,47 +331,25 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // celestia batches expect to have the type byte set, followed by the block height, the start index of the blob in the EDS,
         // the length that the blob occupies in shares in the EDS, the key of the merkle proof, the number of leaves of the merkle proof,
         // the tupleRootNonce, a transaction commitment, the data root to be validated, and the side nodes
-        if (data.length >= 160 && data[0] & 0x0c != 0) {
-            uint256 offset = 1;
-            uint256 sideNodesLength;
-            uint256 height;
-            uint256 key;
-            uint256 numLeaves;
-            uint256 tupleRootNonce;
-            bytes32 dataRoot;
+        if (data.length >= 113 && data[0] & 0x0c != 0) {
+            uint64 height = uint64(bytes8(data[1:9]));
+            // skip start and sharesLength, which is 16 bytes
+            uint64 key = uint64(bytes8(data[25:33]));
 
-            // Directly read from calldata using assembly
-            assembly {
-                height := calldataload(add(data.offset, offset))
-                offset := add(offset, 32)
+            uint64 numLeaves = uint64(bytes8(data[33:41]));
 
-                offset := add(offset, 64) // 'Start' and 'SharesLength' are skipped
+            uint64 tupleRootNonce = uint64(bytes8(data[41:49]));
 
-                key := calldataload(add(data.offset, offset))
-                offset := add(offset, 32)
+            // we skip the txCommitment in the blob pointer, which is 32 bytes
+            bytes32 dataRoot = bytes32(data[81:113]);
+            uint64 sideNodesLength = uint64(bytes8(data[113:121]));
 
-                numLeaves := calldataload(add(data.offset, offset))
-                offset := add(offset, 32)
-
-                tupleRootNonce := calldataload(add(data.offset, offset))
-                offset := add(offset, 32)
-
-                dataRoot := calldataload(add(data.offset, offset))
-                offset := add(offset, 32)
-
-                sideNodesLength := calldataload(add(data.offset, offset))
-                offset := add(offset, 32)
-            }
-
-            // Allocate and populate sideNodes
             bytes32[] memory sideNodes = new bytes32[](sideNodesLength);
-            for (uint256 i = 0; i < sideNodesLength; ++i) {
-                assembly {
-                    mstore(
-                        add(sideNodes, add(0x20, mul(i, 0x20))),
-                        calldataload(add(add(data.offset, offset), mul(i, 0x20)))
-                    )
-                }
+            uint64 startingIndex = 121;
+            for (uint64 i = 0; i < sideNodesLength; ++i) {
+                sideNodes[i] = bytes32(
+                    data[(startingIndex + (i * 32)):(startingIndex + (i * 32) + 32)]
+                );
             }
 
             DataRootTuple memory tuple = DataRootTuple(height, dataRoot);
