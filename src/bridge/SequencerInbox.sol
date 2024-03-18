@@ -62,7 +62,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     IBridge public bridge;
 
-    address public constant BLOBSTREAM = 0x0000000000000000000000000000000000000000;
+    address public constant BLOBSTREAM = 0xa8973BDEf20fe4112C920582938EF2F022C911f5;
 
     /// @inheritdoc ISequencerInbox
     uint256 public constant HEADER_LENGTH = 40;
@@ -541,6 +541,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return
             headerByte == BROTLI_MESSAGE_HEADER_FLAG ||
             headerByte == DAS_MESSAGE_HEADER_FLAG ||
+            headerByte == CELESTIA_MESSAGE_HEADER_FLAG ||
             (headerByte == (DAS_MESSAGE_HEADER_FLAG | TREE_DAS_MESSAGE_HEADER_FLAG)) ||
             headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG;
     }
