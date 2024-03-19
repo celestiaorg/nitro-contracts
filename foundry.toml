@@ -6,8 +6,8 @@ test = 'test/foundry'
 cache_path  = 'forge-cache/sol'
 optimizer = true
 optimizer_runs = 20000
-via_ir = false
-solc_version = '0.8.9'
+via_ir = true
+solc_version = '0.8.13'
 
 [profile.yul]
 src = 'yul'
