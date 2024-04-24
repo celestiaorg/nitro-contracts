@@ -11,6 +11,7 @@ import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
 import "../bridge/Messages.sol";
 import "../bridge/IBridge.sol";
+import "../celestia/BlobstreamVerifier.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
@@ -24,11 +25,13 @@ contract OneStepProverHostIo is IOneStepProver {
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
 
-    function setLeafByte(
-        bytes32 oldLeaf,
-        uint256 idx,
-        uint8 val
-    ) internal pure returns (bytes32) {
+    // Header Bytes
+    bytes1 public constant CELESTIA_MESSAGE_HEADER_FLAG = 0x63;
+
+    // Blobstream contract
+    address public constant BLOBSTREAM = 0xa8973BDEf20fe4112C920582938EF2F022C911f5;
+
+    function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
         // Take into account that we are casting the leaf to a big-endian integer
         uint256 leafShift = (LEAF_SIZE - 1 - idx) * 8;
@@ -108,11 +111,7 @@ contract OneStepProverHostIo is IOneStepProver {
 
     // Computes b**e % m
     // Really pure but the Solidity compiler sees the staticcall and requires view
-    function modExp256(
-        uint256 b,
-        uint256 e,
-        uint256 m
-    ) internal view returns (uint256) {
+    function modExp256(uint256 b, uint256 e, uint256 m) internal view returns (uint256) {
         bytes memory modExpInput = abi.encode(32, 32, 32, b, e, m);
         (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(modExpInput);
         require(modexpSuccess, "MODEXP_FAILED");
@@ -332,6 +331,26 @@ contract OneStepProverHostIo is IOneStepProver {
             // TODO: support proving via an authenticated contract
             require(proof[proofOffset] == 0, "UNKNOWN_INBOX_PROOF");
             proofOffset++;
+            uint256 proofEnd = 0;
+            if (proof[proofOffset + 1] == CELESTIA_MESSAGE_HEADER_FLAG) {
+                CelestiaBatchVerifier.Result result = CelestiaBatchVerifier.verifyBatch(
+                    BLOBSTREAM,
+                    proof
+                );
+
+                if (result == CelestiaBatchVerifier.Result.UNDECIDED)
+                    revert("BLOBSTREAM_UNDECIDED");
+
+                // if its a counterfactual commitment, we replace the batch data with an empty batch
+                if (result == CelestiaBatchVerifier.Result.COUNTERFACTUAL_COMMITMENT) {
+                    proofOffset = 0;
+                }
+
+                if (result == CelestiaBatchVerifier.Result.IN_BLOBSTREAM) {
+                    // 163 is the length of a Celestia batch of data
+                    proofEnd = 163;
+                }
+            }
 
             function(ExecutionContext calldata, uint64, bytes calldata)
                 internal
@@ -347,7 +366,11 @@ contract OneStepProverHostIo is IOneStepProver {
                 mach.status = MachineStatus.ERRORED;
                 return;
             }
-            success = inboxValidate(execCtx, uint64(msgIndex), proof[proofOffset:]);
+            success = inboxValidate(
+                execCtx,
+                uint64(msgIndex),
+                proof[proofOffset:proofOffset + proofEnd]
+            );
             if (!success) {
                 mach.status = MachineStatus.ERRORED;
                 return;

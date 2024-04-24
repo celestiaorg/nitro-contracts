@@ -14,11 +14,11 @@ dotenv.config()
 const solidity = {
   compilers: [
     {
-      version: '0.8.13',
+      version: '0.8.22',
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 1,
         },
         viaIR: true
       },

@@ -41,7 +41,11 @@ import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
 import "../libraries/IReader4844.sol";
 
-import {IDAOracle, DataRootTuple, BinaryMerkleProof} from "../data-availability/IDAOracle.sol";
+import {
+    IDAOracle,
+    DataRootTuple,
+    BinaryMerkleProof
+} from "lib/blobstream-contracts/src/IDAOracle.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import "../libraries/DelegateCallAware.sol";
@@ -76,7 +80,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DAS_MESSAGE_HEADER_FLAG = 0x80;
 
-    bytes1 public constant CELESTIA_MESSAGE_HEADER_FLAG = 0x0c;
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant CELESTIA_MESSAGE_HEADER_FLAG = 0x63;
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant TREE_DAS_MESSAGE_HEADER_FLAG = 0x08;
