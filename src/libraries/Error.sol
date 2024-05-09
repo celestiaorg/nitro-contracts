@@ -201,4 +201,4 @@ error Deprecated();
 error BadMaxTimeVariation();
 
 /// @dev Thrown when Blobstream verification fails for a Celestia Data Root
-error NoSuchDataRoot(bytes32);
+error InvalidCelestiaBatch();

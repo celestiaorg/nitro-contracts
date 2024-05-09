@@ -70,162 +70,36 @@ library CelestiaBatchVerifier {
     function verifyBatch(address _blobstream, bytes calldata _data) internal view returns (Result) {
         IBlobstreamX blobstreamX = IBlobstreamX(_blobstream);
 
-        uint256 offset = 0;
-        uint256 height;
-        uint256 start;
-        uint256 length;
-        bytes32 dataRoot;
+        uint64 height = uint64(bytes8(_data[0:8]));
 
-        assembly {
-            height := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-
-            start := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-
-            length := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-
-            dataRoot := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-        }
-
-        // If the height is to far into the future (10000 blocks), return COUNTERFACTUAL_COMMITMENT
+        // If the height is to far into the future (1000 blocks), return COUNTERFACTUAL_COMMITMENT
         // because the batch poster is trying to stall
-        if (height > (blobstreamX.latestBlock() + 10000)) return Result.COUNTERFACTUAL_COMMITMENT;
+        if (height > (blobstreamX.latestBlock() + 1000)) return Result.COUNTERFACTUAL_COMMITMENT;
 
+        // Otherwise return undecided, as the commitment still needs to be relayed to Blobstream
         if (height > blobstreamX.latestBlock()) return Result.UNDECIDED;
 
-        bytes1 minVersion;
-        bytes28 minId;
-        bytes1 maxVersion;
-        bytes28 maxId;
-        bytes32 digest;
+        (
+            ,
+            NamespaceNode memory namespaceNode,
+            BinaryMerkleProof memory proof,
+            AttestationProof memory attestationProof
+        ) = abi.decode(_data[88:], (address, NamespaceNode, BinaryMerkleProof, AttestationProof));
 
-        assembly {
-            minVersion := calldataload(add(_data.offset, offset))
-            offset := add(offset, 1)
+        (
+            bool valid,
+            uint256 proofHeight,
+            bytes32 proofDataRoot,
+            BinaryMerkleProof memory rowProof
+        ) = verifyProof(_blobstream, namespaceNode, proof, attestationProof);
 
-            minId := calldataload(add(_data.offset, offset))
-            offset := add(offset, 28)
-
-            maxVersion := calldataload(add(_data.offset, offset))
-            offset := add(offset, 1)
-
-            maxId := calldataload(add(_data.offset, offset))
-            offset := add(offset, 28)
-
-            digest := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-        }
-
-        NamespaceNode memory _rowRoot = NamespaceNode(
-            Namespace({version: minVersion, id: minId}),
-            Namespace({version: maxVersion, id: maxId}),
-            digest
-        );
-
-        uint256 merkleProofSideNodesLength;
-        assembly {
-            merkleProofSideNodesLength := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-        }
-
-        // Parse Binary Merkle Proof
-        bytes32[] memory merkleProofSideNodes = new bytes32[](merkleProofSideNodesLength);
-        for (uint256 i = 0; i < merkleProofSideNodesLength; ++i) {
-            assembly {
-                mstore(
-                    add(merkleProofSideNodes, add(0x20, mul(i, 0x20))),
-                    calldataload(add(add(_data.offset, offset), mul(i, 0x20)))
-                )
-            }
-        }
-
-        uint256 merkleProofkey;
-        uint256 merkleProofNumLeaves;
-        assembly {
-            merkleProofkey := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-
-            merkleProofNumLeaves := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-        }
-
-        BinaryMerkleProof memory _rowProof = BinaryMerkleProof(
-            merkleProofSideNodes,
-            merkleProofkey,
-            merkleProofNumLeaves
-        );
-
-        uint256 tupleRootNonce;
-        uint256 tupleHeight;
-        bytes32 tupleDataRoot;
-
-        assembly {
-            tupleRootNonce := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-
-            tupleHeight := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-
-            tupleDataRoot := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-        }
-
-        uint256 attestationProofSideNodesLength;
-        assembly {
-            attestationProofSideNodesLength := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-        }
-
-        // Parse Binary Merkle Proof
-        bytes32[] memory attestationProofSideNodes = new bytes32[](attestationProofSideNodesLength);
-        for (uint256 i = 0; i < attestationProofSideNodesLength; ++i) {
-            assembly {
-                mstore(
-                    add(attestationProofSideNodes, add(0x20, mul(i, 0x20))),
-                    calldataload(add(add(_data.offset, offset), mul(i, 0x20)))
-                )
-            }
-        }
-
-        uint256 attestaionProofkey;
-        uint256 attestaionProofNumLeaves;
-        assembly {
-            attestaionProofkey := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-
-            attestaionProofNumLeaves := calldataload(add(_data.offset, offset))
-            offset := add(offset, 32)
-        }
-
-        AttestationProof memory _attestationProof = AttestationProof(
-            tupleRootNonce,
-            DataRootTuple(tupleHeight, tupleDataRoot),
-            BinaryMerkleProof(
-                attestationProofSideNodes,
-                attestaionProofkey,
-                attestaionProofNumLeaves
-            )
-        );
-
+        // revert, because for a given height that has been confirmed to exist in Blobstream,
+        // there has to be a valid proof
+        if (!valid) revert InvalidProof();
         // check height against the one in the batch data, if they do not match,
         // revert, because the user supplied proof does not verify against
         // the batch's celestia height.
-        if (height != _attestationProof.tuple.height) revert MismatchedHeights();
-
-        // Verify the row root proof and data root attestation
-        // change to verifyRowRootToDataRootTupleRootProof
-        // use only one namespace Node and BinaryMerkleProof
-        (bool valid, ) = DAVerifier.verifyRowRootToDataRootTupleRoot(
-            IDAOracle(_blobstream),
-            _rowRoot,
-            _rowProof,
-            _attestationProof,
-            _attestationProof.tuple.dataRoot
-        );
-        if (!valid) revert InvalidProof();
+        if (height != proofHeight) revert MismatchedHeights();
 
         // check the data root in the proof against the one in the batch data.
         // if they do not match, its a counterfactual commitment, because
@@ -233,14 +107,20 @@ library CelestiaBatchVerifier {
         //    (we know the height is valid because it's less than or equal to the latest block)
         // 2. the data root from the batch data does not exist at the height the batch poster claimed
         //    to have posted to.
-        if (dataRoot != _attestationProof.tuple.dataRoot) return Result.COUNTERFACTUAL_COMMITMENT;
+        // NOTE: a celestia batch has the data root (32 bytes) at index 56
+        if (bytes32(_data[56:88]) != proofDataRoot) return Result.COUNTERFACTUAL_COMMITMENT;
 
         // Calculate size of the Original Data Square (ODS)
-        (uint256 squareSize, ) = DAVerifier.computeSquareSizeFromRowProof(_rowProof);
+        (uint256 squareSize, ) = DAVerifier.computeSquareSizeFromRowProof(rowProof);
 
+        if (squareSize == 0) return Result.COUNTERFACTUAL_COMMITMENT;
         // Check that the start + length posted by the batch poster is not out of bounds
         // otherwise return counterfactual commitment
-        if (start + length > squareSize) return Result.COUNTERFACTUAL_COMMITMENT;
+        // NOTE: a celestia batch has the start (8 bytes) and length (8 bytes) at index 8 - 24
+        // we also substract 1 to account for the shares length including the start share
+        // thus letting us correctly calculate the end index
+        if ((uint64(bytes8(_data[8:16])) + uint64(bytes8(_data[16:24])) - 1) > squareSize)
+            return Result.COUNTERFACTUAL_COMMITMENT;
 
         // At this point, there has been:
         // 1. A succesfull proof that shows the height and data root the batch poster included
@@ -254,5 +134,30 @@ library CelestiaBatchVerifier {
         //      nor about the span being in the bounds of the square. Thus, validators have
         //      access to the data through the preimage oracle
         return Result.IN_BLOBSTREAM;
+    }
+
+    function verifyProof(
+        address _blobstream,
+        NamespaceNode memory _rowRoot,
+        BinaryMerkleProof memory _rowProof,
+        AttestationProof memory _attestationProof
+    )
+        public
+        view
+        returns (
+            bool isValid,
+            uint256 proofHeight,
+            bytes32 proofDataRoot,
+            BinaryMerkleProof memory rowProof
+        )
+    {
+        (bool valid, DAVerifier.ErrorCodes errorCode) = DAVerifier.verifyRowRootToDataRootTupleRoot(
+            IDAOracle(_blobstream),
+            _rowRoot,
+            _rowProof,
+            _attestationProof
+        );
+
+        return (valid, _attestationProof.tuple.height, _attestationProof.tuple.dataRoot, _rowProof);
     }
 }
