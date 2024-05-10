@@ -15,7 +15,7 @@ import {IBlobstreamX} from "../celestia/IBlobstreamX.sol";
 
 import "../celestia/BlobstreamVerifier.sol";
 
-contract OneStepProverHostIoCelestiaMock is IOneStepProver {
+contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
     using MerkleProofLib for MerkleProof;
     using ModuleMemoryLib for ModuleMemory;
