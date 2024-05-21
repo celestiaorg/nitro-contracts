@@ -95,11 +95,13 @@ library CelestiaBatchVerifier {
 
         // revert, because for a given height that has been confirmed to exist in Blobstream,
         // there has to be a valid proof
-        if (!valid) revert InvalidProof();
+        // if (!valid) revert InvalidProof();
+        if (!valid) revert("INVALID_PROOF");
         // check height against the one in the batch data, if they do not match,
         // revert, because the user supplied proof does not verify against
         // the batch's celestia height.
-        if (height != proofHeight) revert MismatchedHeights();
+        // if (height != proofHeight) revert MismatchedHeights();
+        if (height != proofHeight) revert("MismatchedHeights");
 
         // check the data root in the proof against the one in the batch data.
         // if they do not match, its a counterfactual commitment, because
@@ -119,8 +121,10 @@ library CelestiaBatchVerifier {
         // NOTE: a celestia batch has the start (8 bytes) and length (8 bytes) at index 8 - 24
         // we also substract 1 to account for the shares length including the start share
         // thus letting us correctly calculate the end index
-        if ((uint64(bytes8(_data[8:16])) + uint64(bytes8(_data[16:24])) - 1) > squareSize)
-            return Result.COUNTERFACTUAL_COMMITMENT;
+        if (
+            (uint64(bytes8(_data[8:16])) + uint64(bytes8(_data[16:24])) - 1) >
+            squareSize * squareSize
+        ) return Result.COUNTERFACTUAL_COMMITMENT;
 
         // At this point, there has been:
         // 1. A succesfull proof that shows the height and data root the batch poster included

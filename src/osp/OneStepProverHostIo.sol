@@ -23,6 +23,8 @@ contract OneStepProverHostIo is IOneStepProver {
     using ValueStackLib for ValueStack;
     using CelestiaBatchVerifier for address;
 
+    error Offset(uint256);
+
     uint256 private constant LEAF_SIZE = 32;
     uint256 private constant INBOX_NUM = 2;
     uint64 private constant INBOX_HEADER_LEN = 40;
@@ -31,8 +33,7 @@ contract OneStepProverHostIo is IOneStepProver {
     // Header Bytes
     bytes1 public constant CELESTIA_MESSAGE_HEADER_FLAG = 0x63;
 
-    // Blobstream contract (address below is for Arbitrum Sepolia and Base Sepolia)
-    // Always double check the blobstream address for the netwrok in which you are deploying
+    // Blobstream contract (address on Arbitrum One Sepolia, MAKE SURE TO CHANGE FOR CORRESPONDING SETTLEMENT LAYER PRIOR TO DEPLOYMENT)
     address public constant BLOBSTREAM = 0xc3e209eb245Fd59c8586777b499d6A665DF3ABD2;
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
@@ -252,6 +253,8 @@ contract OneStepProverHostIo is IOneStepProver {
         uint64 msgIndex,
         bytes calldata message
     ) internal view returns (bool) {
+        // need to check where exactly does proof offset usually land, see how we can get get rid of the length delimiter
+        // also review delayed message inbox issue Ottersect reported.
         require(message.length >= INBOX_HEADER_LEN, "BAD_SEQINBOX_PROOF");
 
         uint64 afterDelayedMsg;
@@ -298,19 +301,15 @@ contract OneStepProverHostIo is IOneStepProver {
         return true;
     }
 
-    function validateDaProof(bytes calldata proof) internal view returns (uint256) {
-        // if its a regular prof, it wont have a da proof attached
-        uint256 proofEnd = proof.length;
-        // get the last 4 bytes that represent the size of the DA proof (if there's one)
-        uint32 daProofSize = uint32(bytes4(proof[proof.length - 4:proof.length]));
+    function validateDaProof(bytes calldata proof, uint256 offset) internal view returns (uint256) {
+        // NOTE: the offset points to 40 bytes after the proof offset, which should point to a
+        // batch header flag for a sequencer inbox message
+        uint256 proofEnd;
 
-        if (
-            daProofSize < proof.length - 4 &&
-            proof[proof.length - daProofSize - 4] & CELESTIA_MESSAGE_HEADER_FLAG != 0
-        ) {
+        if (proof[0] & CELESTIA_MESSAGE_HEADER_FLAG != 0) {
             CelestiaBatchVerifier.Result result = CelestiaBatchVerifier.verifyBatch(
                 BLOBSTREAM,
-                proof[proof.length - daProofSize - 3:proof.length - 4]
+                proof[1:]
             );
 
             if (result == CelestiaBatchVerifier.Result.UNDECIDED) revert("BLOBSTREAM_UNDECIDED");
@@ -318,12 +317,14 @@ contract OneStepProverHostIo is IOneStepProver {
             // if its a counterfactual commitment, we replace the batch data with an empty batch
             if (result == CelestiaBatchVerifier.Result.COUNTERFACTUAL_COMMITMENT) {
                 // this would slice the array into an empty batch
-                proofEnd -= daProofSize - 4;
+                proofEnd = offset;
             }
 
             if (result == CelestiaBatchVerifier.Result.IN_BLOBSTREAM) {
                 // remove Celestia DA proof from proof
-                proofEnd = proofEnd - daProofSize + 85; // (-4 for the da proof size)
+                // add 88 for the 88 bytes in a celestia batch
+                // (the offset at this point already includes the batch header)
+                proofEnd = offset + 89;
             }
         }
 
@@ -337,8 +338,6 @@ contract OneStepProverHostIo is IOneStepProver {
         Instruction calldata inst,
         bytes calldata proof
     ) internal view {
-        uint256 proofEnd = validateDaProof(proof);
-
         uint256 messageOffset = mach.valueStack.pop().assumeI32();
         uint256 ptr = mach.valueStack.pop().assumeI32();
         uint256 msgIndex = mach.valueStack.pop().assumeI64();
@@ -369,6 +368,8 @@ contract OneStepProverHostIo is IOneStepProver {
             require(proof[proofOffset] == 0, "UNKNOWN_INBOX_PROOF");
             proofOffset++;
 
+            uint256 proofEnd = proof.length;
+
             function(ExecutionContext calldata, uint64, bytes calldata)
                 internal
                 view
@@ -377,6 +378,9 @@ contract OneStepProverHostIo is IOneStepProver {
             bool success;
             if (inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER) {
                 inboxValidate = validateSequencerInbox;
+                if (proof[proofOffset + 40] & CELESTIA_MESSAGE_HEADER_FLAG != 0) {
+                    proofEnd = validateDaProof(proof[proofOffset + 40:], proofOffset + 40);
+                }
             } else if (inst.argumentData == Instructions.INBOX_INDEX_DELAYED) {
                 inboxValidate = validateDelayedInbox;
             } else {
