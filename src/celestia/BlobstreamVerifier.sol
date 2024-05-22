@@ -122,7 +122,7 @@ library CelestiaBatchVerifier {
         // we also substract 1 to account for the shares length including the start share
         // thus letting us correctly calculate the end index
         if (
-            (uint64(bytes8(_data[8:16])) + uint64(bytes8(_data[16:24])) - 1) >
+            (uint64(bytes8(_data[8:16])) + uint64(bytes8(_data[16:24])) - 1) >=
             squareSize * squareSize
         ) return Result.COUNTERFACTUAL_COMMITMENT;
 

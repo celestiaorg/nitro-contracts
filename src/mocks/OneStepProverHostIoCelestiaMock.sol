@@ -23,8 +23,6 @@ contract OneStepProverHostIoCelestiaMock is IOneStepProver {
     using ValueStackLib for ValueStack;
     using CelestiaBatchVerifier for address;
 
-    error Offset(uint256);
-
     uint256 private constant LEAF_SIZE = 32;
     uint256 private constant INBOX_NUM = 2;
     uint64 private constant INBOX_HEADER_LEN = 40;
