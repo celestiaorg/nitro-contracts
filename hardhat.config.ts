@@ -180,8 +180,16 @@ module.exports = {
         network: 'arbSepolia',
         chainId: 421614,
         urls: {
-          apiURL: 'https://sepolia-explorer.arbitrum.io/api',
-          browserURL: 'https://sepolia-explorer.arbitrum.io/',
+          apiURL: 'https://api-sepolia.arbiscan.io/api',
+          browserURL: 'https://sepolia.arbiscan.io/',
+        },
+      },
+      {
+        network: 'baseSepolia',
+        chainId: 84532,
+        urls: {
+          apiURL: 'https://api-sepolia.basescan.org/api',
+          browserURL: 'https://sepolia.basescan.org/',
         },
       },
     ],
