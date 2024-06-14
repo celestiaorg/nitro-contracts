@@ -10,6 +10,8 @@ import { Toolkit4844 } from '../test/contract/toolkit4844'
 import { ArbSys__factory } from '../build/types'
 import { ARB_SYS_ADDRESS } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 
+// NOTE: maxDataSize is set for an L3, if deploying an L2 use "const maxDataSize = 117964"
+export const maxDataSize = 104857
 // Define a verification function
 export async function verifyContract(
   contractName: string,
