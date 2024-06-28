@@ -20,7 +20,7 @@ export async function verifyContract(
   contractPathAndName?: string // optional
 ): Promise<void> {
   try {
-    if (process.env.DISABLE_VERIFICATION) return
+    // if (process.env.DISABLE_VERIFICATION) return
     // Define the verification options with possible 'contract' property
     const verificationOptions: {
       contract?: string
@@ -69,9 +69,7 @@ export async function deployContract(
   await contract.deployTransaction.wait()
   console.log(`New ${contractName} created at address:`, contract.address)
 
-  if (verify)
-    await verifyContract(contractName, contract.address, constructorArgs)
-
+  await verifyContract(contractName, contract.address, constructorArgs)
   return contract
 }
 
