@@ -3,4 +3,5 @@
 	url = https://github.com/foundry-rs/forge-std
 [submodule "lib/blobstream-contracts"]
 	path = lib/blobstream-contracts
-	url = https://github.com/celestiaorg/blobstream-contracts
+	url = https://github.com/Ferret-san/quantum-gravity-bridge.git
+	branch = 0.8.19
