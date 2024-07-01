@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.19;
 
 import "lib/blobstream-contracts/src/DataRootTuple.sol";
 import "lib/blobstream-contracts/src/lib/tree/binary/BinaryMerkleProof.sol";
