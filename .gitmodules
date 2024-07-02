@@ -4,3 +4,6 @@
 [submodule "lib/quantum-gravity-bridge"]
 	path = lib/quantum-gravity-bridge
 	url = https://github.com/Ferret-san/quantum-gravity-bridge
+[submodule "lib/blobstream-contracts"]
+	path = lib/blobstream-contracts
+	url = https://github.com/Ferret-san/blobstream-contracts
