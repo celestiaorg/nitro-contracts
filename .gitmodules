@@ -4,4 +4,3 @@
 [submodule "lib/blobstream-contracts"]
 	path = lib/blobstream-contracts
 	url = https://github.com/Ferret-san/quantum-gravity-bridge.git
-	branch = 0.8.19
