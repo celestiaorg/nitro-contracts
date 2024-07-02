@@ -4,12 +4,12 @@ pragma solidity ^0.8.22;
 import {IBlobstreamX} from "./IBlobstreamX.sol";
 
 import "./DAVerifier.sol";
-import "lib/blobstream-contracts/src/Constants.sol";
-import "lib/blobstream-contracts/src/DataRootTuple.sol";
-import "lib/blobstream-contracts/src/lib/tree/binary/BinaryMerkleProof.sol";
-import "lib/blobstream-contracts/src/lib/tree/binary/BinaryMerkleTree.sol";
-import "lib/blobstream-contracts/src/lib/tree/namespace/NamespaceMerkleTree.sol";
-import "lib/blobstream-contracts/src/lib/tree/Types.sol";
+import "./lib/Constants.sol";
+import "./lib/DataRootTuple.sol";
+import "./lib/tree/binary/BinaryMerkleProof.sol";
+import "./lib/tree/binary/BinaryMerkleTree.sol";
+import "./lib/tree/namespace/NamespaceMerkleTree.sol";
+import "./lib/tree/Types.sol";
 
 /**
  * @dev Go struct representation of batch data for a Celestia DA orbit chain

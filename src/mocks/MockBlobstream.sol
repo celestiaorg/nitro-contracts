@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import "lib/blobstream-contracts/src/DataRootTuple.sol";
-import "lib/blobstream-contracts/src/lib/tree/binary/BinaryMerkleTree.sol";
+import "../celestia/lib/DataRootTuple.sol";
+import "../celestia/lib/tree/binary/BinaryMerkleTree.sol";
 
 import {IBlobstreamX} from "../celestia/IBlobstreamX.sol";
 
