@@ -15,12 +15,13 @@ dotenv.config()
 const solidity = {
   compilers: [
     {
-      version: '0.8.9',
+      version: '0.8.22',
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 1,
         },
+        viaIR: true
       },
     },
   ],
@@ -134,6 +135,12 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
+    baseSepolia: {
+      url: 'https://base-sepolia.g.alchemy.com/v2/XGpartgZXFCFedUcnvJP40usFO33wM1l',
+      accounts: process.env['DEVNET_PRIVKEY']
+        ? [process.env['DEVNET_PRIVKEY']]
+        : [],
+    },
     arb1: {
       url: 'https://arb1.arbitrum.io/rpc',
       accounts: process.env['MAINNET_PRIVKEY']
@@ -161,6 +168,7 @@ module.exports = {
       nova: process.env['NOVA_ARBISCAN_API_KEY'],
       arbGoerliRollup: process.env['ARBISCAN_API_KEY'],
       arbSepolia: process.env['ARBISCAN_API_KEY'],
+      baseSepolia: process.env['BASE_SCAN_API_KEY'],
     },
     customChains: [
       {
@@ -183,8 +191,16 @@ module.exports = {
         network: 'arbSepolia',
         chainId: 421614,
         urls: {
-          apiURL: 'https://sepolia-explorer.arbitrum.io/api',
-          browserURL: 'https://sepolia-explorer.arbitrum.io/',
+          apiURL: 'https://api-sepolia.arbiscan.io/api',
+          browserURL: 'https://sepolia.arbiscan.io/',
+        },
+      },
+      {
+        network: 'baseSepolia',
+        chainId: 84532,
+        urls: {
+          apiURL: 'https://api-sepolia.basescan.org/api',
+          browserURL: 'https://sepolia.basescan.org/',
         },
       },
     ],

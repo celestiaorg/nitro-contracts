@@ -205,3 +205,6 @@ error Deprecated();
 
 /// @dev Thrown when any component of maxTimeVariation is over uint64
 error BadMaxTimeVariation();
+
+/// @dev Thrown when Blobstream verification fails for a Celestia Data Root
+error InvalidCelestiaBatch();
