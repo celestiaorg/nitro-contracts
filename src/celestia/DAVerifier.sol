@@ -3,13 +3,13 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "lib/blobstream-contracts/src/Constants.sol";
-import "lib/blobstream-contracts/src/DataRootTuple.sol";
-import "lib/blobstream-contracts/src/IDAOracle.sol";
-import "lib/blobstream-contracts/src/lib/tree/binary/BinaryMerkleProof.sol";
-import "lib/blobstream-contracts/src/lib/tree/binary/BinaryMerkleTree.sol";
-import "lib/blobstream-contracts/src/lib/tree/namespace/NamespaceMerkleTree.sol";
-import "lib/blobstream-contracts/src/lib/tree/Types.sol";
+import "./lib/Constants.sol";
+import "./lib/DataRootTuple.sol";
+import "./lib/IDAOracle.sol";
+import "./lib/tree/binary/BinaryMerkleProof.sol";
+import "./lib/tree/binary/BinaryMerkleTree.sol";
+import "./lib/tree/namespace/NamespaceMerkleTree.sol";
+import "./lib/tree/Types.sol";
 
 /// @notice Contains the necessary parameters to prove that some shares, which were posted to
 /// the Celestia network, were committed to by the Blobstream smart contract.
