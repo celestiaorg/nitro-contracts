@@ -1,4 +1,4 @@
-// Copyright 2021-2024, Offchain Labs, Inc.
+// Copyright 2021-2022, Offchain Labs, Inc.
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -6,49 +6,33 @@ pragma solidity ^0.8.0;
 
 import "../state/Value.sol";
 import "../state/Machine.sol";
-import "../state/MerkleProof.sol";
-import "../state/MultiStack.sol";
 import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "../osp/IOneStepProver.sol";
 import "../bridge/Messages.sol";
 import "../bridge/IBridge.sol";
-import "../bridge/IHotShot.sol";
 import {IBlobstreamX} from "../celestia/IBlobstreamX.sol";
 
 import "../celestia/BlobstreamVerifier.sol";
 
-contract OneStepProverHostIo is IOneStepProver {
+contract OneStepProverHostIoCelestiaMock is IOneStepProver {
     using GlobalStateLib for GlobalState;
-    using MachineLib for Machine;
     using MerkleProofLib for MerkleProof;
     using ModuleMemoryLib for ModuleMemory;
-    using MultiStackLib for MultiStack;
     using ValueLib for Value;
     using ValueStackLib for ValueStack;
-    using StackFrameLib for StackFrameWindow;
     using CelestiaBatchVerifier for address;
-
-    IHotShot public hotshot;
-
-    constructor(address hotshotAddr) {
-        hotshot = IHotShot(hotshotAddr);
-    }
 
     uint256 private constant LEAF_SIZE = 32;
     uint256 private constant INBOX_NUM = 2;
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
 
-    // Hard coded for now. Find out a way to access the arb config
-    // in this contract and move this constant into the configuration.
-    uint256 private constant ESPRESSO_ESCAPE_HATCH_DELAY_THRESHOLD = 3;
-
     // Header Bytes
     bytes1 public constant CELESTIA_MESSAGE_HEADER_FLAG = 0x63;
 
-    // Blobstream contract (address on Arbitrum One Sepolia, MAKE SURE TO CHANGE FOR CORRESPONDING SETTLEMENT LAYER PRIOR TO DEPLOYMENT)
-    address public constant BLOBSTREAM = 0xc3e209eb245Fd59c8586777b499d6A665DF3ABD2;
+    // Blobstream contract
+    address public constant BLOBSTREAM = 0x8F0FEbB820C4858e3C815f87391bdE38E62b4A8a;
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
@@ -58,10 +42,6 @@ contract OneStepProverHostIo is IOneStepProver {
         newLeaf &= ~(0xFF << leafShift);
         newLeaf |= uint256(val) << leafShift;
         return bytes32(newLeaf);
-    }
-
-    function _getHotShotCommitment(uint256 h) external view returns (uint256) {
-        return hotshot.getHotShotCommitment(h).blockCommRoot;
     }
 
     function executeGetOrSetBytes32(
@@ -78,7 +58,7 @@ contract OneStepProverHostIo is IOneStepProver {
             mach.status = MachineStatus.ERRORED;
             return;
         }
-        if (!mod.moduleMemory.isValidLeaf(ptr)) {
+        if (ptr + 32 > mod.moduleMemory.size || ptr % LEAF_SIZE != 0) {
             mach.status = MachineStatus.ERRORED;
             return;
         }
@@ -319,93 +299,6 @@ contract OneStepProverHostIo is IOneStepProver {
         return true;
     }
 
-    function executeIsHotShotLive(
-        ExecutionContext calldata execCtx,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata,
-        bytes calldata proof
-    ) internal view {
-        uint256 height = mach.valueStack.pop().assumeI64();
-        uint256 threshold = ESPRESSO_ESCAPE_HATCH_DELAY_THRESHOLD;
-        uint8 liveness = uint8(proof[0]);
-        require(
-            validateHotShotLiveness(execCtx, height, threshold, liveness > 0),
-            "WRONG_HOTSHOT_LIVENESS"
-        );
-    }
-
-    function validateHotShotLiveness(
-        ExecutionContext calldata,
-        uint256 height,
-        uint256 threshold,
-        bool result
-    ) internal view returns (bool) {
-        bool expected = hotshot.lagOverEscapeHatchThreshold(height, threshold);
-        return result == expected;
-    }
-
-    function executeReadHotShotCommitment(
-        ExecutionContext calldata execCtx,
-        Machine memory mach,
-        Module memory mod,
-        Instruction calldata,
-        bytes calldata proof
-    ) internal view {
-        uint256 height = mach.valueStack.pop().assumeI64();
-        uint256 ptr = mach.valueStack.pop().assumeI32();
-
-        if (ptr + 32 > mod.moduleMemory.size || ptr % LEAF_SIZE != 0) {
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-
-        uint256 leafIdx = ptr / LEAF_SIZE;
-        uint256 proofOffset = 0;
-        bytes32 leafContents;
-        MerkleProof memory merkleProof;
-        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(
-            leafIdx,
-            proof,
-            proofOffset
-        );
-
-        bytes calldata commitment = proof[proofOffset:proofOffset + 32];
-        bool success = validateHotShotCommitment(execCtx, height, commitment);
-        require(success, "ERROR_HOTSHOT_COMMITMENT");
-
-        for (uint32 i = 0; i < 32; i++) {
-            leafContents = setLeafByte(leafContents, i, uint8(proof[proofOffset + i]));
-        }
-
-        mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
-    }
-
-    function validateHotShotCommitment(
-        ExecutionContext calldata,
-        uint256 height,
-        bytes calldata commitment
-    ) internal view returns (bool) {
-        uint256 expected = hotshot.getHotShotCommitment(height).blockCommRoot;
-        require(expected != 0, "EMPTY HOTSHOT COMMITMENT");
-        bytes memory b = new bytes(32);
-        assembly {
-            mstore(add(b, 32), expected)
-        }
-
-        if (commitment.length != 32) {
-            return false;
-        }
-
-        for (uint256 i = 0; i < b.length; i++) {
-            if (b[i] != commitment[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     function validateDaProof(bytes calldata proof, uint256 offset) internal view returns (uint256) {
         // NOTE: the offset points to 40 bytes after the proof offset, which should point to a
         // batch header flag for a sequencer inbox message
@@ -525,99 +418,6 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.status = MachineStatus.FINISHED;
     }
 
-    function isPowerOfTwo(uint256 value) internal pure returns (bool) {
-        return value != 0 && (value & (value - 1) == 0);
-    }
-
-    function proveLastLeaf(
-        Machine memory mach,
-        uint256 offset,
-        bytes calldata proof
-    )
-        internal
-        pure
-        returns (uint256 leaf, MerkleProof memory leafProof, MerkleProof memory zeroProof)
-    {
-        string memory prefix = "Module merkle tree:";
-        bytes32 root = mach.modulesRoot;
-
-        {
-            Module memory leafModule;
-            uint32 leaf32;
-            (leafModule, offset) = Deserialize.module(proof, offset);
-            (leaf32, offset) = Deserialize.u32(proof, offset);
-            (leafProof, offset) = Deserialize.merkleProof(proof, offset);
-            leaf = uint256(leaf32);
-
-            bytes32 compRoot = leafProof.computeRootFromModule(leaf, leafModule);
-            require(compRoot == root, "WRONG_ROOT_FOR_LEAF");
-        }
-
-        // if tree is unbalanced, check that the next leaf is 0
-        bool balanced = isPowerOfTwo(leaf + 1);
-        if (balanced) {
-            require(1 << leafProof.counterparts.length == leaf + 1, "WRONG_LEAF");
-        } else {
-            (zeroProof, offset) = Deserialize.merkleProof(proof, offset);
-            bytes32 compRoot = zeroProof.computeRootUnsafe(leaf + 1, 0, prefix);
-            require(compRoot == root, "WRONG_ROOT_FOR_ZERO");
-        }
-
-        return (leaf, leafProof, zeroProof);
-    }
-
-    function executeLinkModule(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory mod,
-        Instruction calldata,
-        bytes calldata proof
-    ) internal pure {
-        string memory prefix = "Module merkle tree:";
-        bytes32 root = mach.modulesRoot;
-
-        uint256 pointer = mach.valueStack.pop().assumeI32();
-        if (!mod.moduleMemory.isValidLeaf(pointer)) {
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-        (bytes32 userMod, uint256 offset, ) = mod.moduleMemory.proveLeaf(
-            pointer / LEAF_SIZE,
-            proof,
-            0
-        );
-
-        (uint256 leaf, , MerkleProof memory zeroProof) = proveLastLeaf(mach, offset, proof);
-
-        bool balanced = isPowerOfTwo(leaf + 1);
-        if (balanced) {
-            mach.modulesRoot = MerkleProofLib.growToNewRoot(root, leaf + 1, userMod, 0, prefix);
-        } else {
-            mach.modulesRoot = zeroProof.computeRootUnsafe(leaf + 1, userMod, prefix);
-        }
-
-        mach.valueStack.push(ValueLib.newI32(uint32(leaf + 1)));
-    }
-
-    function executeUnlinkModule(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata,
-        bytes calldata proof
-    ) internal pure {
-        string memory prefix = "Module merkle tree:";
-
-        (uint256 leaf, MerkleProof memory leafProof, ) = proveLastLeaf(mach, 0, proof);
-
-        bool shrink = isPowerOfTwo(leaf);
-        if (shrink) {
-            mach.modulesRoot = leafProof.counterparts[leafProof.counterparts.length - 1];
-        } else {
-            mach.modulesRoot = leafProof.computeRootUnsafe(leaf, 0, prefix);
-        }
-    }
-
     function executeGlobalStateAccess(
         ExecutionContext calldata,
         Machine memory mach,
@@ -646,93 +446,6 @@ contract OneStepProverHostIo is IOneStepProver {
         }
 
         mach.globalStateHash = state.hash();
-    }
-
-    function executeNewCoThread(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata,
-        bytes calldata
-    ) internal pure {
-        if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
-            // cannot create new cothread from inside cothread
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-        mach.frameMultiStack.pushNew();
-        mach.valueMultiStack.pushNew();
-    }
-
-    function provePopCothread(MultiStack memory multi, bytes calldata proof) internal pure {
-        uint256 proofOffset = 0;
-        bytes32 newInactiveCoThread;
-        bytes32 newRemaining;
-        (newInactiveCoThread, proofOffset) = Deserialize.b32(proof, proofOffset);
-        (newRemaining, proofOffset) = Deserialize.b32(proof, proofOffset);
-        if (newInactiveCoThread == MultiStackLib.NO_STACK_HASH) {
-            require(newRemaining == bytes32(0), "WRONG_COTHREAD_EMPTY");
-            require(multi.remainingHash == bytes32(0), "WRONG_COTHREAD_EMPTY");
-        } else {
-            require(
-                keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining)) ==
-                    multi.remainingHash,
-                "WRONG_COTHREAD_POP"
-            );
-        }
-        multi.remainingHash = newRemaining;
-        multi.inactiveStackHash = newInactiveCoThread;
-    }
-
-    function executePopCoThread(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata,
-        bytes calldata proof
-    ) internal pure {
-        if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
-            // cannot pop cothread from inside cothread
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-        if (mach.frameMultiStack.inactiveStackHash == MultiStackLib.NO_STACK_HASH) {
-            // cannot pop cothread if there isn't one
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-        provePopCothread(mach.valueMultiStack, proof);
-        provePopCothread(mach.frameMultiStack, proof[64:]);
-    }
-
-    function executeSwitchCoThread(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata inst,
-        bytes calldata
-    ) internal pure {
-        if (mach.frameMultiStack.inactiveStackHash == MultiStackLib.NO_STACK_HASH) {
-            // cannot switch cothread if there isn't one
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-        if (inst.argumentData == 0) {
-            if (mach.recoveryPc == MachineLib.NO_RECOVERY_PC) {
-                // switching to main thread, from main thread
-                mach.status = MachineStatus.ERRORED;
-                return;
-            }
-            mach.recoveryPc = MachineLib.NO_RECOVERY_PC;
-        } else {
-            if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
-                // switching from cothread to cothread
-                mach.status = MachineStatus.ERRORED;
-                return;
-            }
-            mach.setRecoveryFromPc(uint32(inst.argumentData));
-        }
-        mach.switchCoThreadStacks();
     }
 
     function executeOneStep(
@@ -766,20 +479,6 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executeReadInboxMessage;
         } else if (opcode == Instructions.HALT_AND_SET_FINISHED) {
             impl = executeHaltAndSetFinished;
-        } else if (opcode == Instructions.LINK_MODULE) {
-            impl = executeLinkModule;
-        } else if (opcode == Instructions.UNLINK_MODULE) {
-            impl = executeUnlinkModule;
-        } else if (opcode == Instructions.NEW_COTHREAD) {
-            impl = executeNewCoThread;
-        } else if (opcode == Instructions.POP_COTHREAD) {
-            impl = executePopCoThread;
-        } else if (opcode == Instructions.SWITCH_COTHREAD) {
-            impl = executeSwitchCoThread;
-        } else if (opcode == Instructions.READ_HOTSHOT_COMMITMENT) {
-            impl = executeReadHotShotCommitment;
-        } else if (opcode == Instructions.IS_HOTSHOT_LIVE) {
-            impl = executeIsHotShotLive;
         } else {
             revert("INVALID_MEMORY_OPCODE");
         }
