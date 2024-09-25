@@ -4,13 +4,14 @@ out = 'out'
 libs = ['node_modules', 'lib']
 cache_path  = 'forge-cache/sol'
 optimizer = true
-optimizer_runs = 2000
-via_ir = false
+optimizer_runs = 100
+via_ir = true
 evm_version = 'cancun'
+solc_version = '0.8.19'
 remappings = ['ds-test/=lib/forge-std/lib/ds-test/src/',
               'forge-std/=lib/forge-std/src/',
-              '@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/', 
-              '@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/', 
+              '@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/',
+              '@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/',
               '@offchainlabs/upgrade-executor/=node_modules/@offchainlabs/upgrade-executor/']
 fs_permissions = [{ access = "read", path = "./"}]
 
