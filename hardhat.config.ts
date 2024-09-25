@@ -14,12 +14,13 @@ dotenv.config()
 const solidity = {
   compilers: [
     {
-      version: '0.8.17',
+      version: '0.8.19',
       settings: {
         optimizer: {
           enabled: true,
-          runs: 2000,
+          runs: 1,
         },
+        viaIR: true
       },
     },
   ],
@@ -175,6 +176,12 @@ module.exports = {
     },
     arbSepolia: {
       url: 'https://sepolia-rollup.arbitrum.io/rpc',
+      accounts: process.env['DEVNET_PRIVKEY']
+        ? [process.env['DEVNET_PRIVKEY']]
+        : [],
+    },
+    baseSepolia: {
+      url: 'https://base-sepolia.g.alchemy.com/v2/XGpartgZXFCFedUcnvJP40usFO33wM1l',
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
