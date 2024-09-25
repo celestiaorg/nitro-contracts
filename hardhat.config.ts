@@ -15,12 +15,13 @@ dotenv.config()
 const solidity = {
   compilers: [
     {
-      version: '0.8.9',
+      version: '0.8.19',
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 1,
         },
+        viaIR: true
       },
     },
   ],
@@ -134,6 +135,12 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
+    baseSepolia: {
+      url: 'https://base-sepolia.g.alchemy.com/v2/XGpartgZXFCFedUcnvJP40usFO33wM1l',
+      accounts: process.env['DEVNET_PRIVKEY']
+        ? [process.env['DEVNET_PRIVKEY']]
+        : [],
+    },
     arb1: {
       url: 'https://arb1.arbitrum.io/rpc',
       accounts: process.env['MAINNET_PRIVKEY']
@@ -199,6 +206,14 @@ module.exports = {
         urls: {
           apiURL: 'https://api-sepolia.arbiscan.io/api',
           browserURL: 'https://sepolia.arbiscan.io/',
+        },
+      },
+      {
+        network: 'baseSepolia',
+        chainId: 84532,
+        urls: {
+          apiURL: 'https://api-sepolia.basescan.org/api',
+          browserURL: 'https://sepolia.basescan.org/',
         },
       },
     ],
