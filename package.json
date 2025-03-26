@@ -1,12 +1,19 @@
 {
-  "name": "@arbitrum/nitro-contracts",
+  "name": "celestia-nitro-contracts",
   "version": "2.1.0",
-  "description": "Layer 2 precompiles and rollup for Arbitrum Nitro",
-  "author": "Offchain Labs, Inc.",
+  "description": "Layer 2 precompiles and rollup for Arbitrum Nitro with Celestia DA",
+  "author": {
+    "name": "Celestia Labs"
+  },
+  "contributors": [
+    {
+      "name": "Offchain Labs, Inc."
+    }
+  ],
   "license": "BUSL-1.1",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/offchainlabs/nitro-contracts.git"
+    "url": "git+https://github.com/celestiaorg/nitro-contracts.git"
   },
   "files": [
     "src/",
@@ -15,7 +22,7 @@
     "out/yul/Reader4844.yul/Reader4844.json"
   ],
   "bugs": {
-    "url": "https://github.com/offchainlabs/nitro-contracts/issues"
+    "url": "https://github.com/celestiaorg/nitro-contracts/issues"
   },
   "scripts": {
     "audit:ci": "audit-ci --config ./audit-ci.jsonc",
