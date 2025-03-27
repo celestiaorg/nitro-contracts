@@ -4,18 +4,18 @@
 
 pragma solidity ^0.8.0;
 
-import "../state/Value.sol";
-import "../state/Machine.sol";
-import "../state/MerkleProof.sol";
-import "../state/MultiStack.sol";
-import "../state/Deserialize.sol";
-import "../state/ModuleMemory.sol";
-import "../osp/IOneStepProver.sol";
-import "../bridge/Messages.sol";
-import "../bridge/IBridge.sol";
-import {IBlobstreamX} from "../celestia/IBlobstreamX.sol";
+import "../../../state/Value.sol";
+import "../../../state/Machine.sol";
+import "../../../state/MerkleProof.sol";
+import "../../../state/MultiStack.sol";
+import "../../../state/Deserialize.sol";
+import "../../../state/ModuleMemory.sol";
+import "../../../osp/IOneStepProver.sol";
+import "../../../bridge/Messages.sol";
+import "../../../bridge/IBridge.sol";
+import {IBlobstreamX} from "../../../celestia/IBlobstreamX.sol";
 
-import "../celestia/BlobstreamVerifier.sol";
+import "../../../celestia/BlobstreamVerifier.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
@@ -37,7 +37,7 @@ contract OneStepProverHostIo is IOneStepProver {
     bytes1 public constant CELESTIA_MESSAGE_HEADER_FLAG = 0x63;
 
     // Blobstream contract address
-    address public constant BLOBSTREAM = 0x7Cf3876F681Dbb6EdA8f6FfC45D66B996Df08fAe;
+    address public constant BLOBSTREAM = 0xA83ca7775Bc2889825BcDeDfFa5b758cf69e8794;
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");

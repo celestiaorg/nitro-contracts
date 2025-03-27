@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.16;
 
 import "../Constants.sol";
 import "../Utils.sol";
@@ -46,10 +46,7 @@ library BinaryMerkleTree {
             if (proof.sideNodes.length != 0) {
                 return (false, ErrorCodes.InvalidNumberOfSideNodes);
             }
-        } else if (
-            proof.sideNodes.length !=
-            pathLengthFromKey(proof.key, proof.numLeaves)
-        ) {
+        } else if (proof.sideNodes.length != pathLengthFromKey(proof.key, proof.numLeaves)) {
             return (false, ErrorCodes.InvalidNumberOfSideNodes);
         }
 
@@ -107,27 +104,15 @@ library BinaryMerkleTree {
             return (leafHash, ErrorCodes.ExpectedAtLeastOneInnerHash);
         }
         uint256 numLeft = _getSplitPoint(numLeaves);
-        bytes32[] memory sideNodesLeft = slice(
-            sideNodes,
-            0,
-            sideNodes.length - 1
-        );
+        bytes32[] memory sideNodesLeft = slice(sideNodes, 0, sideNodes.length - 1);
         ErrorCodes error;
         if (key < numLeft) {
             bytes32 leftHash;
-            (leftHash, error) = computeRootHash(
-                key,
-                numLeft,
-                leafHash,
-                sideNodesLeft
-            );
+            (leftHash, error) = computeRootHash(key, numLeft, leafHash, sideNodesLeft);
             if (error != ErrorCodes.NoError) {
                 return (leafHash, error);
             }
-            return (
-                nodeDigest(leftHash, sideNodes[sideNodes.length - 1]),
-                ErrorCodes.NoError
-            );
+            return (nodeDigest(leftHash, sideNodes[sideNodes.length - 1]), ErrorCodes.NoError);
         }
         bytes32 rightHash;
         (rightHash, error) = computeRootHash(
@@ -139,10 +124,7 @@ library BinaryMerkleTree {
         if (error != ErrorCodes.NoError) {
             return (leafHash, error);
         }
-        return (
-            nodeDigest(sideNodes[sideNodes.length - 1], rightHash),
-            ErrorCodes.NoError
-        );
+        return (nodeDigest(sideNodes[sideNodes.length - 1], rightHash), ErrorCodes.NoError);
     }
 
     /// @notice creates a slice of bytes32 from the data slice of bytes32 containing the elements

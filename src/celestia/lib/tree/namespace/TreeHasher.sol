@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.16;
 
 import "../Constants.sol";
 import "../Types.sol";
@@ -7,10 +7,7 @@ import "./NamespaceNode.sol";
 
 /// @notice Get the minimum namespace.
 // solhint-disable-next-line func-visibility
-function namespaceMin(
-    Namespace memory l,
-    Namespace memory r
-) pure returns (Namespace memory) {
+function namespaceMin(Namespace memory l, Namespace memory r) pure returns (Namespace memory) {
     if (l.lessThan(r)) {
         return l;
     } else {
@@ -20,10 +17,7 @@ function namespaceMin(
 
 /// @notice Get the maximum namespace.
 // solhint-disable-next-line func-visibility
-function namespaceMax(
-    Namespace memory l,
-    Namespace memory r
-) pure returns (Namespace memory) {
+function namespaceMax(Namespace memory l, Namespace memory r) pure returns (Namespace memory) {
     if (l.greaterThan(r)) {
         return l;
     } else {
@@ -40,9 +34,7 @@ function leafDigest(
     Namespace memory namespace,
     bytes memory data
 ) pure returns (NamespaceNode memory) {
-    bytes32 digest = sha256(
-        abi.encodePacked(Constants.LEAF_PREFIX, namespace.toBytes(), data)
-    );
+    bytes32 digest = sha256(abi.encodePacked(Constants.LEAF_PREFIX, namespace.toBytes(), data));
     NamespaceNode memory node = NamespaceNode(namespace, namespace, digest);
     return node;
 }
