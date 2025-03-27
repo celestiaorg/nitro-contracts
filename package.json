@@ -1,6 +1,6 @@
 {
   "name": "celestia-nitro-contracts",
-  "version": "2.1.3",
+  "version": "2.1.3-0.8.16",
   "description": "Layer 2 precompiles and rollup for Arbitrum Nitro with Celestia DA",
   "author": {
     "name": "Celestia Labs"

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.16;
 
 import "../celestia/lib/DataRootTuple.sol";
 import "../celestia/lib/tree/binary/BinaryMerkleTree.sol";
