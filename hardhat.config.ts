@@ -19,9 +19,8 @@ const solidity = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 1,
+          runs: 200,
         },
-        viaIR: true
       },
     },
   ],
@@ -43,6 +42,16 @@ const solidity = {
           runs: 100,
         },
         evmVersion: 'cancun',
+      },
+    },
+    'src/mocks/OneStepProverHostIoCelestiaMock.sol': {
+      version: '0.8.16',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 1,
+        },
+        viaIR: true,
       },
     },
   },
