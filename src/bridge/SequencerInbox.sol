@@ -576,7 +576,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
             }
 
-            if (data[0] & CELESTIA_MESSAGE_HEADER_FLAG != 0 && data.length != 89) {
+            if (data[0] & CELESTIA_MESSAGE_HEADER_FLAG != 0 && data.length != 57) {
                 revert InvalidCelestiaBatch();
             }
         }
