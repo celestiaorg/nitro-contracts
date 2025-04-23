@@ -15,7 +15,7 @@ dotenv.config()
 const solidity = {
   compilers: [
     {
-      version: '0.8.16',
+      version: '0.8.19',
       settings: {
         optimizer: {
           enabled: true,
@@ -46,7 +46,7 @@ const solidity = {
       },
     },
     'src/mocks/OneStepProverHostIoCelestiaMock.sol': {
-      version: '0.8.16',
+      version: '0.8.19',
       settings: {
         optimizer: {
           enabled: true,
