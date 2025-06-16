@@ -63,6 +63,15 @@ const solidity = {
         evmVersion: 'cancun',
       },
     },
+    'src/stylus/StylusDeployer.sol': {
+      version: '0.8.17',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+      },
+    },
   },
 }
 
@@ -140,24 +149,24 @@ module.exports = {
       //   interval: 1000,
       // },
       forking: {
-        url: 'https://mainnet.infura.io/v3/' + process.env['INFURA_KEY'],
+        url: process.env['RPC_URL'],
         enabled: process.env['SHOULD_FORK'] === '1',
       },
     },
     mainnet: {
-      url: 'https://mainnet.infura.io/v3/' + process.env['INFURA_KEY'],
+      url: process.env['RPC_URL'],
       accounts: process.env['MAINNET_PRIVKEY']
         ? [process.env['MAINNET_PRIVKEY']]
         : [],
     },
     sepolia: {
-      url: 'https://sepolia.infura.io/v3/' + process.env['INFURA_KEY'],
+      url: process.env['RPC_URL'],
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
     holesky: {
-      url: 'https://holesky.infura.io/v3/' + process.env['INFURA_KEY'],
+      url: process.env['RPC_URL'],
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
@@ -181,7 +190,7 @@ module.exports = {
         : [],
     },
     baseSepolia: {
-      url: 'https://base-sepolia.g.alchemy.com/v2/XGpartgZXFCFedUcnvJP40usFO33wM1l',
+      url: process.env['RPC_URL'],
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
@@ -202,12 +211,6 @@ module.exports = {
       url: 'https://mainnet.base.org',
       accounts: process.env['MAINNET_PRIVKEY']
         ? [process.env['MAINNET_PRIVKEY']]
-        : [],
-    },
-    baseSepolia: {
-      url: 'https://sepolia.base.org',
-      accounts: process.env['DEVNET_PRIVKEY']
-        ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
     custom: {

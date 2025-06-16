@@ -4,7 +4,7 @@
 //
 pragma solidity ^0.8.17;
 
-import "./Enums.sol";
+import './Enums.sol';
 
 /// @dev The edge is not currently stored
 error EdgeNotExists(bytes32 edgeId);
@@ -49,13 +49,21 @@ error EdgeUnrivaled(bytes32 edgeId);
 /// @dev The edge is not confirmed
 error EdgeNotConfirmed(bytes32 edgeId, EdgeStatus);
 /// @dev The edge level is unexpected
-error EdgeLevelInvalid(bytes32 edgeId1, bytes32 edgeId2, uint8 level1, uint8 level2);
+error EdgeLevelInvalid(
+  bytes32 edgeId1,
+  bytes32 edgeId2,
+  uint8 level1,
+  uint8 level2
+);
 /// @dev The claim id on the claimingEdge does not match the provided edge id
 error EdgeClaimMismatch(bytes32 edgeId, bytes32 claimingEdgeId);
 /// @dev The origin id is not equal to the mutual id
 error OriginIdMutualIdMismatch(bytes32 mutualId, bytes32 originId);
 /// @dev The total number of blocks is not above the threshold
-error InsufficientConfirmationBlocks(uint256 totalBlocks, uint256 thresholdBlocks);
+error InsufficientConfirmationBlocks(
+  uint256 totalBlocks,
+  uint256 thresholdBlocks
+);
 /// @dev The edge is not of length one
 error EdgeNotLengthOne(uint256 length);
 /// @dev No origin id supplied when creating an edge
@@ -71,7 +79,11 @@ error EmptyStaker();
 /// @dev No claim id supplied when creating a layer zero edge
 error EmptyClaimId();
 /// @dev Children already set on edge
-error ChildrenAlreadySet(bytes32 edgeId, bytes32 lowerChildId, bytes32 upperChildId);
+error ChildrenAlreadySet(
+  bytes32 edgeId,
+  bytes32 lowerChildId,
+  bytes32 upperChildId
+);
 /// @dev Edge is not a layer zero edge
 error EdgeNotLayerZero(bytes32 edgeId, address staker, bytes32 claimId);
 /// @dev The edge staker has already been refunded
