@@ -8,8 +8,8 @@ pragma solidity ^0.8.17;
 /// - Pending: Yet to be confirmed. Not all edges can be confirmed.
 /// - Confirmed: Once confirmed it cannot transition back to pending
 enum EdgeStatus {
-    Pending,
-    Confirmed
+  Pending,
+  Confirmed
 }
 
 /// @notice The type of the edge. Challenges are decomposed into 3 types of subchallenge
@@ -20,7 +20,7 @@ enum EdgeStatus {
 ///         SmallStep edges are bisected until they reach length one. A length one small step edge
 ///         can then be directly executed using a one-step proof.
 enum EdgeType {
-    Block,
-    BigStep,
-    SmallStep
+  Block,
+  BigStep,
+  SmallStep
 }
